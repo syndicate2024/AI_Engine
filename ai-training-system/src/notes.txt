@@ -1,0 +1,20 @@
+From what I understand, you want to build an AI-powered training system that will help developers learn various technologies, with the system itself being built using JavaScript frameworks. Is this correct?
+--yes
+
+The template you provided (langchainjs-typescript) will serve as our foundation for building the AI orchestration layer. Do you already have experience with TypeScript, or should we focus on JavaScript implementation?
+--Little experience, but am building this with my AI
+
+Looking at AI_Engin.md, I see several AI frameworks listed. Since we're using JavaScript, we'll likely focus on TensorFlow.js and LangChain.js. Are you open to using both, or would you prefer to start with just LangChain.js for simplicity?
+--just LangChain.js, when i get this built I will focus on more advanced AI but until then LangChain.js is more than enough
+
+For the development environment, since you're using Windows with PowerShell, should we include specific PowerShell setup commands in our blueprint?
+--yes, that would be great
+
+Would you like the training system to initially focus on specific JavaScript frameworks (React, Node, Next.js) that you mentioned, or should it be designed to handle any programming topic?
+--for now all javascript, frameworks, UI, other libraries and AI intergrations, the core of the app teachings will be
+all js frameworks with ai intergrations, the idea is once this is learned the develooper can keep using the technologies
+to stay on top all the new AI tools that come out, frameworks, UI, other libraries and AI intergrations, its nearly impossible to stu
+up to date on every little thing but AI can learn all of that and more and keep the developer on top of the latest tools and training as needed for the creer ot he developer
+
+
+
