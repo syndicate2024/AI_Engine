@@ -1,19 +1,20 @@
 import OpenAI from 'openai';
 import { TutorInteraction, TutorResponse, ResponseType } from '../../../types';
+import env from '../../../config/env';
 
 export class TutorChain {
     private openai: OpenAI;
 
     constructor() {
         this.openai = new OpenAI({
-            apiKey: process.env.OPENAI_API_KEY || 'test-key'
+            apiKey: env.OPENAI_API_KEY
         });
     }
 
     async generateResponse(input: TutorInteraction): Promise<TutorResponse> {
         try {
             const completion = await this.openai.chat.completions.create({
-                model: "gpt-4",
+                model: env.DEFAULT_MODEL,
                 messages: [
                     {
                         role: 'system',

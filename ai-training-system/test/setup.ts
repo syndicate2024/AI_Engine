@@ -1,5 +1,41 @@
 import { beforeAll, vi } from 'vitest';
-import { ResponseType } from '../src/types';
+import { z } from 'zod';
+
+interface Message {
+    role: string;
+    content: string;
+}
+
+// Mock environment variables
+const mockEnv = {
+    // OpenAI Configuration
+    OPENAI_API_KEY: 'sk-test-key-12345',
+
+    // Environment
+    NODE_ENV: 'test',
+    PORT: 3000,
+
+    // API Configuration
+    MAX_REQUESTS_PER_MINUTE: 60,
+    ENABLE_RATE_LIMITING: true,
+
+    // Model Configuration
+    DEFAULT_MODEL: 'gpt-4',
+    FALLBACK_MODEL: 'gpt-3.5-turbo',
+    MODEL_TEMPERATURE: 0.7,
+    MAX_TOKENS: 2048,
+
+    // Logging
+    LOG_LEVEL: 'debug',
+    LOG_FORMAT: 'text',
+
+    // Security
+    CORS_ORIGINS: ['http://localhost:3000'],
+
+    // Cache Configuration
+    CACHE_TTL: 3600,
+    ENABLE_CACHE: true
+};
 
 // Mock responses for different scenarios
 const mockResponses = {
@@ -64,7 +100,7 @@ const mockResponses = {
 const mockOpenAI = {
     chat: {
         completions: {
-            create: vi.fn().mockImplementation(({ messages }) => {
+            create: vi.fn().mockImplementation(({ messages }: { messages: Message[] }) => {
                 const userMessage = messages.find(m => m.role === 'user')?.content || '';
                 let responseContent = mockResponses.default.content;
 
@@ -92,15 +128,17 @@ const mockOpenAI = {
 };
 
 // Export mock data and utilities for tests
-export { mockOpenAI, mockResponses };
+export { mockOpenAI, mockResponses, mockEnv };
 
 // Setup global mocks
 beforeAll(() => {
+    // Mock environment module
+    vi.mock('../src/config/env', () => ({
+        default: mockEnv
+    }));
+
     // Mock OpenAI
     vi.mock('openai', () => ({
         default: vi.fn().mockImplementation(() => mockOpenAI)
     }));
-
-    // Mock environment variables
-    process.env.OPENAI_API_KEY = 'mock-api-key';
 }); 
