@@ -5,9 +5,9 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { generateTutorResponse } from '../tutorChain';
-import { TutorContext, SkillLevel, TutorResponse } from '../../../../types';
+import { TutorContext, SkillLevel, TutorResponse, ResponseType, Project } from '../../../../types';
 import { chatModel } from '../../../../config/ai-config';
-import { AIMessage } from '@langchain/core/messages';
+import { AIMessageChunk } from '@langchain/core/messages';
 
 // Mock the AI config module
 vi.mock('../../../../config/ai-config', () => ({
@@ -20,23 +20,31 @@ vi.mock('../../../../config/ai-config', () => ({
  * Creates a mock AI response with consistent structure
  * @param type - The type of response (explanation, example, etc.)
  * @param content - The main content of the response
- * @returns A mock AIMessage with JSON stringified content
+ * @returns A mock AIMessageChunk with JSON stringified content
  */
-const createMockResponse = (type: string, content: string): AIMessage => {
+const createMockResponse = (type: ResponseType, content: string): AIMessageChunk => {
   const response: TutorResponse = {
     content,
-    type: type as any,
+    type,
     confidence: 0.9,
     followUpQuestions: ["What are let and const?", "How does variable scope work?"],
     relatedConcepts: ["data types", "scope", "hoisting"]
   };
-  return new AIMessage({ content: JSON.stringify(response) });
+  return new AIMessageChunk({ content: JSON.stringify(response), additional_kwargs: {} });
 };
 
 describe('tutorChain', () => {
   let mockContext: TutorContext;
 
   beforeEach(() => {
+    const mockProject: Project = {
+      id: '1',
+      name: 'JavaScript Basics',
+      description: 'Introduction to JavaScript',
+      completed: true,
+      timestamp: new Date()
+    };
+
     mockContext = {
       skillLevel: SkillLevel.BEGINNER,
       currentTopic: 'JavaScript Variables',
@@ -45,14 +53,12 @@ describe('tutorChain', () => {
       currentModule: 'JavaScript Basics',
       recentConcepts: ['Programming Fundamentals'],
       struggledTopics: [],
-      completedProjects: []
+      completedProjects: [mockProject]
     };
 
-    // Reset mock for each test
-    vi.mocked(chatModel.invoke).mockReset();
-    // Set default mock response
+    // Mock successful response
     vi.mocked(chatModel.invoke).mockResolvedValue(
-      createMockResponse('explanation', "Here's an explanation of variables in JavaScript")
+      createMockResponse(ResponseType.CONCEPT_EXPLANATION, 'JavaScript is a programming language')
     );
   });
 
@@ -145,26 +151,26 @@ describe('tutorChain', () => {
   describe('Response Types', () => {
     it('should handle explanation type', async () => {
       vi.mocked(chatModel.invoke).mockResolvedValueOnce(
-        createMockResponse('explanation', "Here's an explanation")
+        createMockResponse(ResponseType.CONCEPT_EXPLANATION, "Here's an explanation")
       );
       const response = await generateTutorResponse(mockContext, 'What are variables?');
-      expect(response.type).toBe('explanation');
+      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
     });
 
     it('should handle example type', async () => {
       vi.mocked(chatModel.invoke).mockResolvedValueOnce(
-        createMockResponse('example', "Here's an example of variable usage")
+        createMockResponse(ResponseType.EXAMPLE, "Here's an example of variable usage")
       );
       const response = await generateTutorResponse(mockContext, 'Show me variable examples');
-      expect(response.type).toBe('example');
+      expect(response.type).toBe(ResponseType.EXAMPLE);
     });
 
     it('should handle correction type', async () => {
       vi.mocked(chatModel.invoke).mockResolvedValueOnce(
-        createMockResponse('correction', "Let me correct that understanding")
+        createMockResponse(ResponseType.CORRECTION, "Let me correct that understanding")
       );
       const response = await generateTutorResponse(mockContext, 'Is var the best way to declare variables?');
-      expect(response.type).toBe('correction');
+      expect(response.type).toBe(ResponseType.CORRECTION);
     });
   });
 
@@ -186,11 +192,17 @@ describe('tutorChain', () => {
     });
 
     it('should handle multiple previous interactions', async () => {
-      const mockResponse = createMockResponse('explanation', 'JavaScript is a programming language');
+      const mockResponse = createMockResponse(ResponseType.CONCEPT_EXPLANATION, 'JavaScript is a programming language');
       mockContext.previousInteractions = [
         {
           userQuery: 'What is JavaScript?',
-          response: JSON.parse(mockResponse.content) as TutorResponse,
+          response: {
+            content: 'JavaScript is a programming language',
+            type: ResponseType.CONCEPT_EXPLANATION,
+            confidence: 0.9,
+            followUpQuestions: ['What can you do with JavaScript?'],
+            relatedConcepts: ['programming', 'web development']
+          },
           context: mockContext,
           skillLevel: mockContext.skillLevel,
           currentTopic: mockContext.currentTopic,

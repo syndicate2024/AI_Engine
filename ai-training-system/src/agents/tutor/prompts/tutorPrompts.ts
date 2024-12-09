@@ -44,15 +44,15 @@ export const TUTOR_PROMPTS = {
     Previous attempts: {previousAttempts}
   `),
   
-  practiceExercise: PromptTemplate.fromTemplate(`
-    Create a practice exercise for {concept} at {skillLevel} level.
+  bestPractices: PromptTemplate.fromTemplate(`
+    Guide the student on best practices for {topic}.
+    Skill level: {skillLevel}
     
-    Include:
-    - Clear problem statement
-    - Starting code (if needed)
-    - Test cases
-    - Hints (progressive disclosure)
-    - Learning objectives
+    Follow these guidelines:
+    - Start with fundamental principles
+    - Provide concrete examples
+    - Explain the reasoning behind each practice
+    - Reference industry standards
     
     Related concepts: {relatedConcepts}
     Previous exercises: {previousExercises}

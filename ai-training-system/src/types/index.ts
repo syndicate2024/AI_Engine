@@ -8,12 +8,14 @@ export enum SkillLevel {
 }
 
 export enum ResponseType {
-  CONCEPT_EXPLANATION = 'CONCEPT_EXPLANATION',
-  CODE_REVIEW = 'CODE_REVIEW',
-  ERROR_HELP = 'ERROR_HELP',
-  BEST_PRACTICES = 'BEST_PRACTICES',
-  RESOURCE_SUGGESTION = 'RESOURCE_SUGGESTION',
-  PROGRESS_CHECK = 'PROGRESS_CHECK'
+  CONCEPT_EXPLANATION = 'explanation',
+  CODE_REVIEW = 'review',
+  ERROR_HELP = 'error',
+  BEST_PRACTICES = 'best_practices',
+  RESOURCE_SUGGESTION = 'resource',
+  PROGRESS_CHECK = 'progress',
+  EXAMPLE = 'example',
+  CORRECTION = 'correction'
 }
 
 // Learning context and progress tracking
@@ -27,25 +29,30 @@ export interface LearningContext {
 export interface Project {
   id: string;
   name: string;
-  topics: string[];
+  description: string;
   completed: boolean;
-  feedback?: string;
+  timestamp: Date;
 }
 
 // Tutor interaction types
 export interface TutorInteraction {
-  context: LearningContext;
   userQuery: string;
+  response: TutorResponse;
+  context: LearningContext;
   skillLevel: SkillLevel;
   currentTopic: string;
-  previousInteractions: Interaction[];
+  previousInteractions: TutorInteraction[];
+  timestamp: Date;
 }
 
-export interface Interaction {
-  timestamp: string;
-  query: string;
-  response: string;
+export interface TutorResponse {
+  content: string;
   type: ResponseType;
+  confidence: number;
+  followUpQuestions: string[];
+  relatedConcepts: string[];
+  additionalResources?: Resource[];
+  codeSnippets?: CodeSnippet[];
 }
 
 // Response structures
@@ -109,27 +116,17 @@ export type TutorResponseType = 'explanation' | 'example' | 'question' | 'correc
 // Tutor Types
 export interface TutorResponse {
   content: string;
-  type: TutorResponseType;
+  type: ResponseType;
   confidence: number;
   followUpQuestions?: string[];
   relatedConcepts?: string[];
 }
 
-export interface TutorContext {
-  skillLevel: 'beginner' | 'intermediate' | 'advanced';
+export interface TutorContext extends LearningContext {
+  skillLevel: SkillLevel;
   previousInteractions: TutorInteraction[];
   learningPath: string[];
   currentTopic: string;
-}
-
-export interface TutorInteraction {
-  question: string;
-  response: TutorResponse;
-  timestamp: Date;
-  feedback?: {
-    helpful: boolean;
-    comments?: string;
-  };
 }
 
 // Assessment Types

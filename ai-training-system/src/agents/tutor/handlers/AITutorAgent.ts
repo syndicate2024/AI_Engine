@@ -1,13 +1,10 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { TUTOR_PROMPTS, RESPONSE_TEMPLATES } from '../prompts/tutorPrompts';
+import { TUTOR_PROMPTS } from '../prompts/tutorPrompts';
 import {
   LearningContext,
   TutorInteraction,
   TutorResponse,
-  ResponseType,
-  SkillLevel,
-  CodeSnippet,
-  Resource
+  ResponseType
 } from '../../../types';
 
 export class AITutorAgent {
@@ -89,21 +86,21 @@ export class AITutorAgent {
       case ResponseType.ERROR_HELP:
         return TUTOR_PROMPTS.errorHelp.format({
           error: input.userQuery,
-          context: input.context.currentModule,
+          context: input.currentTopic,
           skillLevel: input.skillLevel,
           previousAttempts: input.previousInteractions
-            .map(i => i.query)
+            .map(i => i.userQuery)
             .join('\n')
         });
       
       case ResponseType.BEST_PRACTICES:
-        return TUTOR_PROMPTS.practiceExercise.format({
-          concept: input.currentTopic,
+        return TUTOR_PROMPTS.bestPractices.format({
+          topic: input.currentTopic,
           skillLevel: input.skillLevel,
           relatedConcepts: input.context.recentConcepts.join(', '),
           previousExercises: input.previousInteractions
-            .filter(i => i.type === ResponseType.BEST_PRACTICES)
-            .map(i => i.query)
+            .filter(i => i.response.type === ResponseType.BEST_PRACTICES)
+            .map(i => i.userQuery)
             .join('\n')
         });
       
