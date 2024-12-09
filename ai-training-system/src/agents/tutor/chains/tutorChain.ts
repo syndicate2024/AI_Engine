@@ -32,7 +32,7 @@ export class TutorChain {
             const codeSnippets = this.extractCodeSnippets(content);
 
             // Generate follow-up questions based on the content
-            const followUpQuestions = this.generateFollowUpQuestions(content, input.skillLevel);
+            const followUpQuestions = this.generateFollowUpQuestions(content);
 
             // Clean content by removing code blocks
             const cleanContent = this.removeCodeBlocks(content);
@@ -63,14 +63,14 @@ export class TutorChain {
     }
 
     private extractCodeSnippets(content: string): string[] {
-        // Match code blocks with or without language specification
-        const regex = /```(?:javascript|js)?\n([\s\S]*?)```/g;
+        // Match code blocks with any language specification or none
+        const regex = /```(?:(\w+)\n)?([\s\S]*?)```/g;
         const matches = [];
         let match;
 
         while ((match = regex.exec(content)) !== null) {
             // Get the code inside the block and trim whitespace
-            const code = match[1].trim();
+            const code = match[2].trim();
             if (code) {
                 matches.push(code);
             }
@@ -81,10 +81,10 @@ export class TutorChain {
 
     private removeCodeBlocks(content: string): string {
         // Remove code blocks to clean the content
-        return content.replace(/```(?:javascript|js)?\n[\s\S]*?```/g, '').trim();
+        return content.replace(/```(?:\w+)?\n[\s\S]*?```/g, '').trim();
     }
 
-    private generateFollowUpQuestions(content: string, skillLevel: string): string[] {
+    private generateFollowUpQuestions(content: string): string[] {
         // Extract questions that start with common question words
         const questionRegex = /(?:What|How|Why|Can you|Could you|Please explain|Explain).*?\?/g;
         const questions = content.match(questionRegex) || [];
