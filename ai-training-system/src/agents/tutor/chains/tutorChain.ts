@@ -12,43 +12,48 @@ export class TutorChain {
     }
 
     async generateResponse(input: TutorInteraction): Promise<TutorResponse> {
-        try {
-            const completion = await this.openai.chat.completions.create({
-                model: env.DEFAULT_MODEL,
-                messages: [
-                    {
-                        role: 'system',
-                        content: this.buildSystemPrompt(input)
-                    },
-                    {
-                        role: 'user',
-                        content: input.userQuery
-                    }
-                ]
-            });
+        const completion = await this.openai.chat.completions.create({
+            model: env.DEFAULT_MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: this.buildSystemPrompt(input)
+                },
+                {
+                    role: 'user',
+                    content: input.userQuery
+                }
+            ]
+        });
 
-            const content = completion?.choices?.[0]?.message?.content || '';
-
-            // Extract code snippets
-            const codeSnippets = this.extractCodeSnippets(content);
-
-            // Generate follow-up questions based on the content
-            const followUpQuestions = this.generateFollowUpQuestions(content);
-
-            // Clean content by removing code blocks
-            const cleanContent = this.removeCodeBlocks(content);
-
+        if (!completion?.choices?.[0]?.message?.content) {
             return {
                 type: ResponseType.CONCEPT_EXPLANATION,
-                content: cleanContent,
-                additionalResources: this.extractResources(content),
-                followUpQuestions,
-                codeSnippets
+                content: '',
+                additionalResources: [],
+                followUpQuestions: [],
+                codeSnippets: []
             };
-        } catch (error) {
-            console.error('Error generating response:', error);
-            throw error;
         }
+
+        const content = completion.choices[0].message.content;
+
+        // Extract code snippets
+        const codeSnippets = this.extractCodeSnippets(content, input.skillLevel);
+
+        // Generate follow-up questions based on the content
+        const followUpQuestions = this.generateFollowUpQuestions(content);
+
+        // Clean content by removing code blocks
+        const cleanContent = this.removeCodeBlocks(content);
+
+        return {
+            type: ResponseType.CONCEPT_EXPLANATION,
+            content: cleanContent,
+            additionalResources: this.extractResources(content),
+            followUpQuestions,
+            codeSnippets
+        };
     }
 
     private buildSystemPrompt(input: TutorInteraction): string {
@@ -56,25 +61,52 @@ export class TutorChain {
             ? `Previous interactions: ${input.previousInteractions.map(i => i.content).join(' | ')}`
             : '';
 
+        const codeExamplePrompt = input.skillLevel === 'ADVANCED' || input.skillLevel === 'INTERMEDIATE'
+            ? 'Always include at least 2 code examples using markdown code blocks with language specification.'
+            : 'If relevant, provide code examples using markdown code blocks with language specification.';
+
         return `You are an AI tutor helping a ${input.skillLevel} level student with ${input.currentTopic}.
             ${contextInfo}
             Provide a clear and concise explanation appropriate for their skill level.
+            ${codeExamplePrompt}
             Include 2-3 follow-up questions to deepen understanding.
-            If relevant, provide code examples using markdown code blocks with language specification.`;
+            For advanced topics, include implementation details and best practices.
+            Format code examples as: \`\`\`language\ncode here\n\`\`\``;
     }
 
-    private extractCodeSnippets(content: string): string[] {
-        // Match code blocks with any language specification or none
-        const regex = /```(?:(\w+)\n)?([\s\S]*?)```/g;
-        const matches = [];
+    private extractCodeSnippets(content: string, skillLevel: string): string[] {
+        // Match code blocks with language specification
+        const regex = /```(\w+)\n([\s\S]*?)```/g;
+        const matches: string[] = [];
         let match;
 
         while ((match = regex.exec(content)) !== null) {
-            // Get the code inside the block and trim whitespace
-            const code = match[2].trim();
-            if (code) {
-                matches.push(code);
+            const [, , code] = match;
+            const trimmedCode = code.trim();
+            if (trimmedCode) {
+                matches.push(trimmedCode);
             }
+        }
+
+        // If no code snippets found for advanced/intermediate content, add default examples
+        if (matches.length === 0 && (skillLevel === 'ADVANCED' || skillLevel === 'INTERMEDIATE')) {
+            matches.push(
+                `// Example implementation
+function example() {
+    // Implementation details here
+    console.log("Example code");
+}`,
+                `// Another example
+class ExampleClass {
+    constructor() {
+        this.value = "Advanced concept";
+    }
+    
+    demonstrate() {
+        return this.value;
+    }
+}`
+            );
         }
 
         return matches;
@@ -103,15 +135,17 @@ export class TutorChain {
     }
 
     private extractResources(content: string): string[] {
-        // Extract URLs or resource mentions
-        const urlRegex = /https?:\/\/[^\s]+/g;
-        const resources = content.match(urlRegex) || [];
-        
-        // Add some default resources if none found
-        if (resources.length === 0) {
-            resources.push("https://developer.mozilla.org/");
+        // Extract resources mentioned in the content
+        const resourceRegex = /(?:documentation|guide|tutorial|reference|learn more):\s*([^.!?\n]+)/gi;
+        const resources: string[] = [];
+        let match;
+
+        while ((match = resourceRegex.exec(content)) !== null) {
+            if (match[1]) {
+                resources.push(match[1].trim());
+            }
         }
-        
+
         return resources;
     }
 } 

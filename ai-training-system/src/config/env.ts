@@ -6,11 +6,27 @@ dotenv.config();
 
 // Custom validators
 const isValidOpenAIKey = (key: string) => {
-    return key.startsWith('sk-') && key.length > 20;
+    if (typeof key !== 'string') return false;
+    
+    // Must start with 'sk-' and contain no whitespace
+    const validKeyPattern = /^sk-[a-zA-Z0-9-]+$/;
+    if (!validKeyPattern.test(key)) return false;
+    
+    // Must be between 20 and 100 characters
+    if (key.length < 20 || key.length > 100) return false;
+    
+    return true;
 };
 
 const isValidPort = (port: number) => {
     return port >= 1024 && port <= 65535;
+};
+
+// Sensitive value masking for logging
+const maskSensitiveValue = (value: string) => {
+    if (!value) return '';
+    if (value.length <= 8) return '*'.repeat(value.length);
+    return value.slice(0, 4) + '*'.repeat(value.length - 8) + value.slice(-4);
 };
 
 // Environment variable schema
@@ -18,7 +34,14 @@ const envSchema = z.object({
     // OpenAI Configuration
     OPENAI_API_KEY: z.string()
         .min(1, 'OpenAI API key is required')
-        .refine(isValidOpenAIKey, 'Invalid OpenAI API key format'),
+        .refine(isValidOpenAIKey, {
+            message: 'Invalid OpenAI API key format'
+        })
+        .transform(value => ({
+            value,
+            masked: maskSensitiveValue(value)
+        }))
+        .transform(({ value }) => value), // Return only the value for actual use
     
     // Environment
     NODE_ENV: z.enum(['development', 'test', 'production'])
