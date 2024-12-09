@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AITutorAgent } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '../../../types';
+import { TutorChain } from '../tutorChain';
+import { ResponseType, TutorInteraction } from '@/types';
 
-describe('AITutorAgent Integration Tests', () => {
-  let tutorAgent: AITutorAgent;
+describe('TutorChain Integration Tests', () => {
+  let tutorChain: TutorChain;
 
   beforeEach(() => {
-    tutorAgent = new AITutorAgent();
+    tutorChain = new TutorChain();
   });
 
   describe('OpenAI Integration', () => {
@@ -14,10 +14,17 @@ describe('AITutorAgent Integration Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "What is a promise in JavaScript?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "JavaScript Async"
+        currentTopic: "JavaScript Async",
+        context: {
+          currentModule: "JavaScript Async",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.content).toBeTruthy();
       expect(response.type).toBeDefined();
@@ -27,10 +34,17 @@ describe('AITutorAgent Integration Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "Explain everything about React hooks",
         skillLevel: "ADVANCED",
-        currentTopic: "React Hooks"
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["Components", "State"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.content.length).toBeGreaterThan(100);
       expect(response.followUpQuestions?.length).toBeGreaterThan(0);
@@ -42,10 +56,17 @@ describe('AITutorAgent Integration Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "How do React hooks, context, and Redux work together in a large application?",
         skillLevel: "ADVANCED",
-        currentTopic: "React State Management"
+        currentTopic: "React State Management",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["Hooks", "Context", "State Management"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.content).toMatch(/redux|context|hooks/i);
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
@@ -55,19 +76,32 @@ describe('AITutorAgent Integration Tests', () => {
       const firstInteraction: TutorInteraction = {
         userQuery: "What is Redux?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "React State Management"
+        currentTopic: "React State Management",
+        context: {
+          currentModule: "React State Management",
+          recentConcepts: ["State", "Props"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const firstResponse = await tutorAgent.generateResponse(firstInteraction);
+      const firstResponse = await tutorChain.generateResponse(firstInteraction);
 
       const secondInteraction: TutorInteraction = {
         userQuery: "How does that compare to Context?",
         skillLevel: "INTERMEDIATE",
         currentTopic: "React State Management",
+        context: {
+          currentModule: "React State Management",
+          recentConcepts: ["Redux", "State", "Props"],
+          struggledTopics: [],
+          completedProjects: []
+        },
         previousInteractions: [firstResponse]
       };
 
-      const secondResponse = await tutorAgent.generateResponse(secondInteraction);
+      const secondResponse = await tutorChain.generateResponse(secondInteraction);
       
       expect(secondResponse.content).toMatch(/redux|context|comparison/i);
     });

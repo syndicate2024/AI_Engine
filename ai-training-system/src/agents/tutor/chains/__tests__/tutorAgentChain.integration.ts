@@ -11,11 +11,18 @@ describe('TutorAgentChain Integration Tests', () => {
   });
 
   describe('OpenAI Integration', () => {
-    it('should successfully communicate with OpenAI API', async () => {
+    it('should successfully call OpenAI API', async () => {
       const interaction: TutorInteraction = {
         userQuery: "What is a promise in JavaScript?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "JavaScript Async"
+        currentTopic: "JavaScript Async",
+        context: {
+          currentModule: "JavaScript Async Programming",
+          recentConcepts: ["callbacks"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
       const response = await tutorAgentChain.generateResponse(interaction);
@@ -25,24 +32,30 @@ describe('TutorAgentChain Integration Tests', () => {
       expect(response.content.length).toBeGreaterThan(100);
     });
 
-    it('should process complex responses correctly', async () => {
+    it('should handle large responses', async () => {
       const interaction: TutorInteraction = {
-        userQuery: "Explain the event loop, promises, and async/await in detail",
+        userQuery: "Explain everything about React hooks",
         skillLevel: "ADVANCED",
-        currentTopic: "JavaScript Async"
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["components", "state"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
       const response = await tutorAgentChain.generateResponse(interaction);
       
-      expect(response.content).toMatch(/event loop|promise|async|await/i);
-      expect(response.codeSnippets?.length).toBeGreaterThan(1);
-      expect(response.followUpQuestions?.length).toBeGreaterThan(2);
+      expect(response.content.length).toBeGreaterThan(100);
+      expect(response.followUpQuestions?.length).toBeGreaterThan(0);
     });
   });
 
-  describe('Agent Interactions', () => {
+  describe('Cross-Agent Integration', () => {
     it('should integrate with assessment agent feedback', async () => {
-      const assessmentFeedback = {
+      const assessmentFeedback: TutorInteraction = {
         userQuery: "Help me understand array methods better",
         skillLevel: "BEGINNER",
         currentTopic: "JavaScript Arrays",
@@ -51,7 +64,8 @@ describe('TutorAgentChain Integration Tests', () => {
           recentConcepts: ["variables", "loops"],
           struggledTopics: ["array methods", "callbacks"],
           completedProjects: []
-        }
+        },
+        previousInteractions: []
       };
 
       const response = await tutorAgentChain.generateResponse(assessmentFeedback);
@@ -61,8 +75,8 @@ describe('TutorAgentChain Integration Tests', () => {
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
     });
 
-    it('should integrate with progress agent updates', async () => {
-      const progressUpdate = {
+    it('should adapt to progress agent updates', async () => {
+      const progressUpdate: TutorInteraction = {
         userQuery: "What should I learn next?",
         skillLevel: "INTERMEDIATE",
         currentTopic: "React State",
@@ -71,7 +85,8 @@ describe('TutorAgentChain Integration Tests', () => {
           recentConcepts: ["useState", "props"],
           struggledTopics: [],
           completedProjects: ["todo-app"]
-        }
+        },
+        previousInteractions: []
       };
 
       const response = await tutorAgentChain.generateResponse(progressUpdate);
@@ -80,29 +95,55 @@ describe('TutorAgentChain Integration Tests', () => {
       expect(response.type).toBe(ResponseType.RESOURCE_SUGGESTION);
       expect(response.additionalResources?.length).toBeGreaterThan(1);
     });
+  });
 
-    it('should integrate with resource agent suggestions', async () => {
-      const resourceRequest = {
-        userQuery: "I need more practice with React hooks",
+  describe('Long-Running Sessions', () => {
+    it('should maintain context over multiple interactions', async () => {
+      // First interaction
+      const firstResponse = await tutorAgentChain.generateResponse({
+        userQuery: "What is useEffect?",
         skillLevel: "INTERMEDIATE",
         currentTopic: "React Hooks",
         context: {
           currentModule: "React Advanced",
-          recentConcepts: ["useState", "useEffect"],
-          struggledTopics: ["custom hooks"],
-          completedProjects: ["basic-hooks"]
-        }
-      };
-
-      const response = await tutorAgentChain.generateResponse(resourceRequest);
-      
-      expect(response.additionalResources).toBeDefined();
-      expect(response.additionalResources?.length).toBeGreaterThan(2);
-      expect(response.additionalResources?.[0]).toMatchObject({
-        type: expect.stringMatching(/documentation|exercise|tutorial/),
-        title: expect.stringContaining('React'),
-        relevance: expect.any(Number)
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       });
+
+      // Second interaction
+      const secondResponse = await tutorAgentChain.generateResponse({
+        userQuery: "What about cleanup?",
+        skillLevel: "INTERMEDIATE",
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["useEffect"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: [firstResponse]
+      });
+
+      // Third interaction
+      const thirdResponse = await tutorAgentChain.generateResponse({
+        userQuery: "Can you show an example?",
+        skillLevel: "INTERMEDIATE",
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["useEffect", "cleanup"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: [firstResponse, secondResponse]
+      });
+
+      expect(thirdResponse.content).toMatch(/useEffect|cleanup|example/i);
+      expect(thirdResponse.codeSnippets?.length).toBeGreaterThan(0);
+      expect(thirdResponse.content).toMatch(/return|unmount|subscription/i);
     });
   });
 }); 

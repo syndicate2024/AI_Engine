@@ -4,16 +4,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AITutorAgent } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '../../../types';
-import { mockTutorResponse } from '../../../../test/setup';
+import { TutorChain } from '../tutorChain';
+import { ResponseType, TutorInteraction } from '@/types';
+import { mockTutorResponse } from '@/test/setup';
 
-describe('AITutorAgent Unit Tests', () => {
-  let tutorAgent: AITutorAgent;
+describe('TutorChain Unit Tests', () => {
+  let tutorChain: TutorChain;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    tutorAgent = new AITutorAgent();
+    tutorChain = new TutorChain();
   });
 
   describe('Basic Response Generation', () => {
@@ -21,10 +21,17 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "What is a variable?",
         skillLevel: "BEGINNER",
-        currentTopic: "JavaScript Basics"
+        currentTopic: "JavaScript Basics",
+        context: {
+          currentModule: "JavaScript Fundamentals",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response).toMatchObject({
         type: ResponseType.CONCEPT_EXPLANATION,
@@ -38,10 +45,17 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "How do I use async/await?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "JavaScript Async"
+        currentTopic: "JavaScript Async",
+        context: {
+          currentModule: "JavaScript Async",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.followUpQuestions).toBeDefined();
       expect(response.followUpQuestions?.length).toBeGreaterThan(0);
@@ -53,10 +67,17 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "What is a closure?",
         skillLevel: "BEGINNER",
-        currentTopic: "JavaScript Functions"
+        currentTopic: "JavaScript Functions",
+        context: {
+          currentModule: "JavaScript Functions",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
       expect(response.content).toMatch(/basic|fundamental|simple/i);
@@ -66,10 +87,17 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "What is a closure?",
         skillLevel: "ADVANCED",
-        currentTopic: "JavaScript Functions"
+        currentTopic: "JavaScript Functions",
+        context: {
+          currentModule: "JavaScript Advanced",
+          recentConcepts: ["functions", "scope"],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.content).toMatch(/advanced|complex|detailed/i);
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
@@ -78,28 +106,40 @@ describe('AITutorAgent Unit Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle API errors gracefully', async () => {
-      vi.spyOn(tutorAgent['openai'].chat.completions, 'create')
+      vi.spyOn(tutorChain['model'], 'invoke')
         .mockRejectedValueOnce(new Error('API Error'));
 
       await expect(async () => {
-        await tutorAgent.generateResponse({
+        await tutorChain.generateResponse({
           userQuery: "test",
           skillLevel: "BEGINNER",
-          currentTopic: "test"
+          currentTopic: "test",
+          context: {
+            currentModule: "test",
+            recentConcepts: [],
+            struggledTopics: [],
+            completedProjects: []
+          },
+          previousInteractions: []
         });
       }).rejects.toThrow('API Error');
     });
 
     it('should handle empty responses', async () => {
-      vi.spyOn(tutorAgent['openai'].chat.completions, 'create')
-        .mockResolvedValueOnce({
-          choices: [{ message: { content: '' } }]
-        } as any);
+      vi.spyOn(tutorChain['model'], 'invoke')
+        .mockResolvedValueOnce({ content: '' });
 
-      const response = await tutorAgent.generateResponse({
+      const response = await tutorChain.generateResponse({
         userQuery: "test",
         skillLevel: "BEGINNER",
-        currentTopic: "test"
+        currentTopic: "test",
+        context: {
+          currentModule: "test",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       });
 
       expect(response.content).toBe('No response generated. Please try again.');
@@ -112,10 +152,16 @@ describe('AITutorAgent Unit Tests', () => {
         userQuery: "Can you explain more?",
         skillLevel: "INTERMEDIATE",
         currentTopic: "JavaScript Functions",
+        context: {
+          currentModule: "JavaScript Functions",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
         previousInteractions: [mockTutorResponse]
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       expect(response.content).toBeTruthy();
     });
 
@@ -124,6 +170,12 @@ describe('AITutorAgent Unit Tests', () => {
         userQuery: "What about performance?",
         skillLevel: "ADVANCED",
         currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Advanced",
+          recentConcepts: ["hooks", "performance"],
+          struggledTopics: [],
+          completedProjects: []
+        },
         previousInteractions: [{
           type: ResponseType.CONCEPT_EXPLANATION,
           content: "React hooks are functions that...",
@@ -132,7 +184,7 @@ describe('AITutorAgent Unit Tests', () => {
         }]
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       expect(response.content).toMatch(/react|hooks|performance/i);
     });
   });
@@ -142,26 +194,40 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "Show me how to use array methods",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "JavaScript Arrays"
+        currentTopic: "JavaScript Arrays",
+        context: {
+          currentModule: "JavaScript Arrays",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.codeSnippets).toBeDefined();
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
-      expect(response.codeSnippets?.[0]).toMatch(/\[\]/); // Should contain array syntax
+      expect(response.codeSnippets?.[0].code).toMatch(/\[\]/); // Should contain array syntax
     });
 
     it('should format code snippets correctly', async () => {
       const interaction: TutorInteraction = {
         userQuery: "How do I write a for loop?",
         skillLevel: "BEGINNER",
-        currentTopic: "JavaScript Basics"
+        currentTopic: "JavaScript Basics",
+        context: {
+          currentModule: "JavaScript Basics",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
-      expect(response.codeSnippets?.[0]).toMatch(/for\s*\(/); // Should contain for loop syntax
+      expect(response.codeSnippets?.[0].code).toMatch(/for\s*\(/); // Should contain for loop syntax
       expect(response.content).toMatch(/loop|iterate/i);
     });
   });
@@ -171,14 +237,21 @@ describe('AITutorAgent Unit Tests', () => {
       const interaction: TutorInteraction = {
         userQuery: "What are the best practices for React hooks?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "React Hooks"
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Hooks",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       };
 
-      const response = await tutorAgent.generateResponse(interaction);
+      const response = await tutorChain.generateResponse(interaction);
       
       expect(response.additionalResources).toBeDefined();
       expect(response.additionalResources?.length).toBeGreaterThan(0);
-      expect(response.additionalResources?.[0]).toMatch(/react|hooks/i);
+      expect(response.additionalResources?.[0].title).toMatch(/react|hooks/i);
     });
   });
 }); 

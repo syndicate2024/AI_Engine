@@ -7,9 +7,9 @@ import {
   ResponseType,
   CodeSnippet,
   Resource
-} from '../../../types';
+} from '@/types';
 
-export class AITutorAgent {
+export class TutorChain {
   private model: ChatOpenAI;
   private learningContext: LearningContext;
 

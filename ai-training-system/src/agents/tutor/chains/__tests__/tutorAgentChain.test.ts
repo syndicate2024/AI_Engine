@@ -29,8 +29,8 @@ describe('TutorAgentChain Tests', () => {
       const response = await tutorAgentChain.generateResponse(interaction);
       
       expect(response).toMatchObject({
-        content: expect.any(String),
         type: ResponseType.CONCEPT_EXPLANATION,
+        content: expect.any(String),
         additionalResources: expect.any(Array),
         followUpQuestions: expect.any(Array)
       });
@@ -80,13 +80,20 @@ describe('TutorAgentChain Tests', () => {
   describe('Error Handling', () => {
     it('should handle API errors gracefully', async () => {
       vi.spyOn(tutorAgentChain.model.chat.completions, 'create')
-        .mockRejectedValueOnce(new Error('API Error'));
+        .mockRejectedValueOnce(mockAPIError);
 
       await expect(async () => {
         await tutorAgentChain.generateResponse({
           userQuery: "test",
           skillLevel: "BEGINNER",
-          currentTopic: "test"
+          currentTopic: "test",
+          context: {
+            currentModule: "test",
+            recentConcepts: [],
+            struggledTopics: [],
+            completedProjects: []
+          },
+          previousInteractions: []
         });
       }).rejects.toThrow('API Error');
     });
@@ -100,7 +107,14 @@ describe('TutorAgentChain Tests', () => {
       const response = await tutorAgentChain.generateResponse({
         userQuery: "test",
         skillLevel: "BEGINNER",
-        currentTopic: "test"
+        currentTopic: "test",
+        context: {
+          currentModule: "test",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       });
 
       expect(response.content).toBe('No response generated. Please try again.');
@@ -124,13 +138,26 @@ describe('TutorAgentChain Tests', () => {
       const firstResponse = await tutorAgentChain.generateResponse({
         userQuery: "What is useState?",
         skillLevel: "INTERMEDIATE",
-        currentTopic: "React Hooks"
+        currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Hooks",
+          recentConcepts: [],
+          struggledTopics: [],
+          completedProjects: []
+        },
+        previousInteractions: []
       });
 
       const secondResponse = await tutorAgentChain.generateResponse({
         userQuery: "Can you explain more?",
         skillLevel: "INTERMEDIATE",
         currentTopic: "React Hooks",
+        context: {
+          currentModule: "React Hooks",
+          recentConcepts: ["useState"],
+          struggledTopics: [],
+          completedProjects: []
+        },
         previousInteractions: [firstResponse]
       });
 

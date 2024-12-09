@@ -5,7 +5,21 @@ import { ResponseType, TutorResponse } from '../src/types';
 export const mockOpenAIResponse = {
   choices: [{
     message: {
-      content: 'Mocked response content'
+      content: JSON.stringify({
+        type: ResponseType.CONCEPT_EXPLANATION,
+        content: "This is a detailed explanation of the concept...",
+        codeSnippets: [
+          {
+            language: "javascript",
+            code: "const example = () => { /* code here */ }",
+            explanation: "Example function"
+          }
+        ],
+        followUpQuestions: [
+          "What about advanced use cases?",
+          "How does this compare to alternatives?"
+        ]
+      })
     }
   }]
 };
@@ -43,6 +57,8 @@ export const mockAPIError = new Error('API Error');
 // Global test setup
 vi.mock('@langchain/openai', () => ({
   ChatOpenAI: vi.fn().mockImplementation(() => ({
+    model: 'gpt-4-turbo',
+    temperature: 0.7,
     invoke: vi.fn().mockResolvedValue({ content: mockOpenAIResponse.choices[0].message.content })
   }))
 })); 
