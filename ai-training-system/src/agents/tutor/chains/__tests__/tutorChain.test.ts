@@ -68,6 +68,7 @@ describe('TutorChain', () => {
         };
 
         const response = await tutorChain.generateResponse(interaction);
+        expect(response.codeSnippets).toBeDefined();
         expect(response.codeSnippets).toHaveLength(1);
         expect(response.codeSnippets[0]).toContain('array.map');
     });

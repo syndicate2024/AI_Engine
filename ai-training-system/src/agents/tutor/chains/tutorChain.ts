@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { TutorInteraction, TutorResponse, ResponseType, CodeSnippet } from '../../../types';
+import { TutorInteraction, TutorResponse, ResponseType } from '../../../types';
 
 export class TutorChain {
     private openai: OpenAI;
@@ -51,14 +51,20 @@ export class TutorChain {
             Provide a clear and concise explanation appropriate for their skill level.`;
     }
 
-    private extractCodeSnippets(content: string): CodeSnippet[] {
-        const snippetMatches = content.match(/```(?:js|javascript)?\n([\s\S]*?)```/g) || [];
-        return snippetMatches.map(match => {
-            const code = match.replace(/```(?:js|javascript)?\n|```/g, '').trim();
-            return {
-                code,
-                explanation: 'Code example'
-            };
-        });
+    private extractCodeSnippets(content: string): string[] {
+        // Match code blocks with or without language specification
+        const regex = /```(?:javascript|js)?\n([\s\S]*?)```/g;
+        const matches = [];
+        let match;
+
+        while ((match = regex.exec(content)) !== null) {
+            // Get the code inside the block and trim whitespace
+            const code = match[1].trim();
+            if (code) {
+                matches.push(code);
+            }
+        }
+
+        return matches;
     }
 } 
