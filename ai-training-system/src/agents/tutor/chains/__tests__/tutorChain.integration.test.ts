@@ -1,76 +1,94 @@
 /**
  * @fileoverview Integration tests for the AI Tutor Chain
- * Tests the interaction between components with real API calls
+ * Tests the interaction between components and with the OpenAI service
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { generateTutorResponse } from '../tutorChain';
-import { TutorContext, SkillLevel, TutorInteraction, ResponseType, Project } from '../../../../types';
+import { TutorContext, SkillLevel, ResponseType, Project } from '../../../../types';
 
-describe('tutorChain Integration', () => {
-  let context: TutorContext;
+describe('Tutor Chain Integration Tests', () => {
+  let mockContext: TutorContext;
 
   beforeEach(() => {
-    const mockProject: Project = {
-      id: '1',
-      name: 'JavaScript Basics',
-      description: 'Introduction to JavaScript',
-      completed: true,
-      timestamp: new Date()
-    };
-
-    context = {
+    mockContext = {
       skillLevel: SkillLevel.BEGINNER,
-      currentTopic: 'JavaScript Variables',
-      learningPath: ['Programming Basics', 'JavaScript Intro'],
+      currentTopic: 'JavaScript Basics',
+      learningPath: ['Introduction', 'Variables'],
       previousInteractions: [],
-      currentModule: 'JavaScript Basics',
-      recentConcepts: ['Programming Fundamentals'],
+      currentModule: 'Programming Fundamentals',
+      recentConcepts: ['variables', 'data types'],
       struggledTopics: [],
-      completedProjects: [mockProject]
+      completedProjects: [] as Project[]
     };
   });
 
-  it('should generate valid responses', async () => {
-    const response = await generateTutorResponse(context, 'What are variables?');
-    expect(response).toBeDefined();
-    expect(response.content).toBeTruthy();
-    expect(Object.values(ResponseType)).toContain(response.type);
+  describe('OpenAI Interactions', () => {
+    it('should generate coherent responses', async () => {
+      const response = await generateTutorResponse(mockContext, 'What is JavaScript?');
+      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
+      expect(response.content).toBeTruthy();
+      expect(response.confidence).toBeGreaterThan(0);
+      expect(response.followUpQuestions).toBeDefined();
+      expect(response.relatedConcepts).toBeDefined();
+    });
+
+    it('should adapt responses based on skill level', async () => {
+      const advancedContext = {
+        ...mockContext,
+        skillLevel: SkillLevel.ADVANCED
+      };
+      const response = await generateTutorResponse(advancedContext, 'Explain closures');
+      expect(response.content).toBeTruthy();
+      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
+    });
+
+    it('should maintain conversation context', async () => {
+      const firstResponse = await generateTutorResponse(mockContext, 'What is JavaScript?');
+      const contextWithHistory = {
+        ...mockContext,
+        previousInteractions: [
+          {
+            question: 'What is JavaScript?',
+            response: firstResponse,
+            context: mockContext,
+            skillLevel: mockContext.skillLevel,
+            currentTopic: mockContext.currentTopic,
+            previousInteractions: [],
+            timestamp: new Date()
+          }
+        ]
+      };
+      const response = await generateTutorResponse(contextWithHistory, 'How does it differ from Java?');
+      expect(response.content).toBeTruthy();
+      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
+    });
+
+    it('should handle code review requests', async () => {
+      const response = await generateTutorResponse(mockContext, 'Review my code: function test() {}');
+      expect(response.type).toBe(ResponseType.CODE_REVIEW);
+      expect(response.content).toBeTruthy();
+    });
+
+    it('should provide error explanations', async () => {
+      const response = await generateTutorResponse(mockContext, 'Why am I getting TypeError?');
+      expect(response.type).toBe(ResponseType.ERROR_EXPLANATION);
+      expect(response.content).toBeTruthy();
+    });
   });
 
-  it('should maintain context across interactions', async () => {
-    // First interaction
-    const firstQuestion = 'What are variables?';
-    const firstResponse = await generateTutorResponse(context, firstQuestion);
-    expect(firstResponse).toBeDefined();
-    
-    // Create a proper TutorInteraction with complete context
-    const interaction: TutorInteraction = {
-      userQuery: firstQuestion,
-      response: firstResponse,
-      context: {
-        currentModule: context.currentModule,
-        recentConcepts: context.recentConcepts,
-        struggledTopics: context.struggledTopics,
-        completedProjects: context.completedProjects
-      },
-      skillLevel: context.skillLevel,
-      currentTopic: context.currentTopic,
-      previousInteractions: [],
-      timestamp: new Date()
-    };
+  describe('Error Handling', () => {
+    it('should handle malformed questions gracefully', async () => {
+      const response = await generateTutorResponse(mockContext, '???');
+      expect(response.content).toBeTruthy();
+      expect(response.confidence).toBeLessThan(1);
+    });
 
-    // Update context with the interaction
-    context.previousInteractions.push(interaction);
-
-    // Second interaction
-    const secondResponse = await generateTutorResponse(
-      context,
-      'How do I declare a variable?'
-    );
-    expect(secondResponse).toBeDefined();
-    expect(secondResponse.relatedConcepts).toContain('variables');
+    it('should handle long inputs', async () => {
+      const longQuestion = 'a'.repeat(1000);
+      const response = await generateTutorResponse(mockContext, longQuestion);
+      expect(response.content).toBeTruthy();
+      expect(response.type).toBeDefined();
+    });
   });
-
-  // ... rest of the test file ...
 }); 

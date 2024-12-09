@@ -3,7 +3,11 @@ import { z } from 'zod';
 // Environment variable schema
 const envSchema = z.object({
   // OpenAI Configuration
-  OPENAI_API_KEY: z.string().min(1).startsWith('sk-'),
+  OPENAI_API_KEY: z.string().min(1).refine((val) => {
+    // Allow any string in test environment
+    if (process.env.NODE_ENV === 'test') return true;
+    return val.startsWith('sk-');
+  }, { message: "API key must start with 'sk-' in non-test environments" }),
   OPENAI_MODEL: z.string().default('gpt-4'),
   OPENAI_TEMPERATURE: z.coerce.number().min(0).max(2).default(0.7),
   
@@ -45,7 +49,11 @@ const validateEnv = () => {
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('❌ Invalid environment variables:', JSON.stringify(error.errors, null, 2));
-      process.exit(1);
+      // Don't exit process in test environment
+      if (process.env.NODE_ENV !== 'test') {
+        process.exit(1);
+      }
+      throw error;
     }
     throw error;
   }

@@ -8,14 +8,11 @@ export enum SkillLevel {
 }
 
 export enum ResponseType {
-  CONCEPT_EXPLANATION = 'explanation',
-  CODE_REVIEW = 'review',
-  ERROR_HELP = 'error',
-  BEST_PRACTICES = 'best_practices',
-  RESOURCE_SUGGESTION = 'resource',
-  PROGRESS_CHECK = 'progress',
-  EXAMPLE = 'example',
-  CORRECTION = 'correction'
+  CONCEPT_EXPLANATION = 'CONCEPT_EXPLANATION',
+  CODE_REVIEW = 'CODE_REVIEW',
+  ERROR_EXPLANATION = 'ERROR_EXPLANATION',
+  HINT = 'HINT',
+  QUESTION = 'QUESTION'
 }
 
 // Learning context and progress tracking
@@ -36,7 +33,7 @@ export interface Project {
 
 // Tutor interaction types
 export interface TutorInteraction {
-  userQuery: string;
+  question: string;
   response: TutorResponse;
   context: LearningContext;
   skillLevel: SkillLevel;
@@ -51,32 +48,18 @@ export interface TutorResponse {
   confidence: number;
   followUpQuestions: string[];
   relatedConcepts: string[];
-  additionalResources?: Resource[];
-  codeSnippets?: CodeSnippet[];
 }
 
-// Response structures
-export interface TutorResponse {
-  type: ResponseType;
-  content: string;
-  additionalResources?: Resource[];
-  followUpQuestions?: string[];
-  codeSnippets?: CodeSnippet[];
-}
-
-export interface Resource {
-  type: 'documentation' | 'tutorial' | 'exercise' | 'example';
-  title: string;
-  url?: string;
-  content?: string;
-  relevance: number;
-}
-
-export interface CodeSnippet {
-  code: string;
-  language: string;
-  explanation: string;
-  focus?: string[];
+// Context for tutor chain
+export interface TutorContext {
+  skillLevel: SkillLevel;
+  currentTopic: string;
+  learningPath: string[];
+  previousInteractions: TutorInteraction[];
+  currentModule: string;
+  recentConcepts: string[];
+  struggledTopics: string[];
+  completedProjects: Project[];
 }
 
 // Re-export all types from validation.ts

@@ -2,7 +2,7 @@ import { PromptTemplate } from '@langchain/core/prompts';
 import { JsonOutputParser } from '@langchain/core/output_parsers';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { chatModel } from '../../../config/ai-config';
-import { TutorResponse, TutorContext } from '../../../types';
+import { TutorResponse, TutorContext, ResponseType } from '../../../types';
 import { BaseMessage } from '@langchain/core/messages';
 import { AIServiceError, ValidationError } from '../../../utils/error-handling';
 
@@ -41,14 +41,28 @@ Provide a response that includes:
 - Follow-up questions to check understanding
 - Related concepts they might want to explore
 
-Response should be in JSON format with:
+Response MUST be in this exact JSON format:
 {
-  "content": "Your detailed response",
-  "type": "explanation" | "example" | "question" | "correction" | "hint",
-  "confidence": number between 0 and 1,
-  "followUpQuestions": ["question1", "question2"],
+  "content": "Your detailed response here",
+  "type": "CONCEPT_EXPLANATION",
+  "confidence": 0.9,
+  "followUpQuestions": ["What are the key concepts?", "How does this work in practice?"],
   "relatedConcepts": ["concept1", "concept2"]
 }
+
+Choose the most appropriate type from these exact values:
+- "CONCEPT_EXPLANATION"
+- "CODE_REVIEW"
+- "ERROR_EXPLANATION"
+- "HINT"
+- "QUESTION"
+
+Make sure to:
+1. Keep responses clear and concise
+2. Include practical examples
+3. Match the explanation to the skill level
+4. Suggest related topics to explore
+5. Include 2-3 follow-up questions
 `);
 
 /**
@@ -85,7 +99,10 @@ export const tutorChain = RunnableSequence.from([
           question: input.question,
         });
       } catch (error) {
-        throw new ValidationError(`Error formatting prompt: ${error.message}`);
+        if (error instanceof Error) {
+          throw new ValidationError(`Error formatting prompt: ${error.message}`);
+        }
+        throw new ValidationError('Error formatting prompt');
       }
     },
   },
@@ -96,7 +113,10 @@ export const tutorChain = RunnableSequence.from([
     try {
       return response.content;
     } catch (error) {
-      throw new AIServiceError(`Error extracting content from response: ${error.message}`);
+      if (error instanceof Error) {
+        throw new AIServiceError(`Error extracting content from response: ${error.message}`);
+      }
+      throw new AIServiceError('Error extracting content from response');
     }
   },
   // Fourth step: Parse the response
@@ -131,10 +151,22 @@ export async function generateTutorResponse(
       throw new ValidationError('Invalid response structure from AI model');
     }
 
+    // Validate response type
+    if (!Object.values(ResponseType).includes(response.type)) {
+      throw new ValidationError(`Invalid response type: ${response.type}`);
+    }
+
     return response;
   } catch (error) {
-    if (error instanceof ValidationError || error instanceof AIServiceError) {
+    if (error instanceof ValidationError) {
       throw error;
+    }
+    if (error instanceof AIServiceError) {
+      throw error;
+    }
+    if (error instanceof Error) {
+      console.error('Error generating tutor response:', error);
+      throw new AIServiceError(`Failed to generate tutor response: ${error.message}`);
     }
     console.error('Error generating tutor response:', error);
     throw new AIServiceError('Failed to generate tutor response');
