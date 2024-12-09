@@ -1,9 +1,8 @@
 export enum ResponseType {
   CONCEPT_EXPLANATION = 'CONCEPT_EXPLANATION',
-  CODE_REVIEW = 'CODE_REVIEW',
-  ERROR_HELP = 'ERROR_HELP',
-  BEST_PRACTICES = 'BEST_PRACTICES',
-  RESOURCE_SUGGESTION = 'RESOURCE_SUGGESTION'
+  CODE_EXAMPLE = 'CODE_EXAMPLE',
+  ERROR_CORRECTION = 'ERROR_CORRECTION',
+  PRACTICE_EXERCISE = 'PRACTICE_EXERCISE'
 }
 
 export type SkillLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
@@ -33,18 +32,16 @@ export interface Resource {
 export interface TutorResponse {
   type: ResponseType;
   content: string;
-  additionalResources?: Resource[];
+  additionalResources?: string[];
   followUpQuestions?: string[];
-  codeSnippets?: CodeSnippet[];
-  confidence?: number;
+  codeSnippets?: string[];
 }
 
 export interface TutorInteraction {
   userQuery: string;
-  skillLevel: SkillLevel;
+  skillLevel: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   currentTopic: string;
-  context: LearningContext;
-  previousInteractions: TutorResponse[];
+  previousInteractions?: TutorResponse[];
 }
 
 export interface OpenAIConfig {
@@ -69,4 +66,13 @@ export interface ErrorResponse {
   message: string;
   code: string;
   details?: Record<string, unknown>;
-} 
+}
+
+// Mock response for testing
+export const mockTutorResponse: TutorResponse = {
+  type: ResponseType.CONCEPT_EXPLANATION,
+  content: "This is a mock response for testing",
+  additionalResources: ["https://example.com/resource"],
+  followUpQuestions: ["What would you like to learn next?"],
+  codeSnippets: ["console.log('Hello World');"]
+}; 

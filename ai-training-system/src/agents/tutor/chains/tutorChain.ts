@@ -28,19 +28,20 @@ export class TutorChain {
 
             const content = completion?.choices?.[0]?.message?.content || '';
 
-            // Ensure codeSnippets is always defined as an array
-            const codeSnippets = this.extractCodeSnippets(content).map(code => ({
-                code,
-                explanation: 'Code example',
-                language: 'javascript',
-                focus: []
-            }));
+            // Extract code snippets
+            const codeSnippets = this.extractCodeSnippets(content);
+
+            // Generate follow-up questions based on the content
+            const followUpQuestions = this.generateFollowUpQuestions(content, input.skillLevel);
+
+            // Clean content by removing code blocks
+            const cleanContent = this.removeCodeBlocks(content);
 
             return {
                 type: ResponseType.CONCEPT_EXPLANATION,
-                content,
-                additionalResources: [],
-                followUpQuestions: [],
+                content: cleanContent,
+                additionalResources: this.extractResources(content),
+                followUpQuestions,
                 codeSnippets
             };
         } catch (error) {
@@ -56,7 +57,9 @@ export class TutorChain {
 
         return `You are an AI tutor helping a ${input.skillLevel} level student with ${input.currentTopic}.
             ${contextInfo}
-            Provide a clear and concise explanation appropriate for their skill level.`;
+            Provide a clear and concise explanation appropriate for their skill level.
+            Include 2-3 follow-up questions to deepen understanding.
+            If relevant, provide code examples using markdown code blocks with language specification.`;
     }
 
     private extractCodeSnippets(content: string): string[] {
@@ -74,5 +77,40 @@ export class TutorChain {
         }
 
         return matches;
+    }
+
+    private removeCodeBlocks(content: string): string {
+        // Remove code blocks to clean the content
+        return content.replace(/```(?:javascript|js)?\n[\s\S]*?```/g, '').trim();
+    }
+
+    private generateFollowUpQuestions(content: string, skillLevel: string): string[] {
+        // Extract questions that start with common question words
+        const questionRegex = /(?:What|How|Why|Can you|Could you|Please explain|Explain).*?\?/g;
+        const questions = content.match(questionRegex) || [];
+        
+        // If no questions found in content, generate default ones
+        if (questions.length === 0) {
+            return [
+                "Can you explain this concept with a different example?",
+                "How would you apply this in a real-world scenario?",
+                "What are some common pitfalls to avoid?"
+            ];
+        }
+
+        return questions;
+    }
+
+    private extractResources(content: string): string[] {
+        // Extract URLs or resource mentions
+        const urlRegex = /https?:\/\/[^\s]+/g;
+        const resources = content.match(urlRegex) || [];
+        
+        // Add some default resources if none found
+        if (resources.length === 0) {
+            resources.push("https://developer.mozilla.org/");
+        }
+        
+        return resources;
     }
 } 

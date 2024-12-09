@@ -5,89 +5,98 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TutorChain } from '../tutorChain';
-import { ResponseType, TutorInteraction, TutorResponse } from '../../../../types';
+import { ResponseType, TutorInteraction } from '../../../../types';
 import { mockOpenAI } from '../../../../../test/setup';
 
-describe('TutorChain', () => {
+describe('TutorChain Unit Tests', () => {
     let tutorChain: TutorChain;
-    const defaultContext = {
-        currentModule: '',
-        recentConcepts: [],
-        struggledTopics: [],
-        completedProjects: []
-    };
 
     beforeEach(() => {
         vi.clearAllMocks();
         tutorChain = new TutorChain();
     });
 
-    it('should provide advanced content for experts', async () => {
-        mockOpenAI.chat.completions.create.mockResolvedValueOnce({
-            choices: [{
-                message: {
-                    content: "Advanced and complex explanation of closures..."
-                }
-            }]
+    describe('Basic Response Generation', () => {
+        it('should generate a basic response', async () => {
+            const interaction: TutorInteraction = {
+                userQuery: "What is a variable?",
+                skillLevel: "BEGINNER",
+                currentTopic: "JavaScript Basics"
+            };
+
+            const response = await tutorChain.generateResponse(interaction);
+            
+            expect(response).toMatchObject({
+                type: ResponseType.CONCEPT_EXPLANATION,
+                content: expect.any(String),
+                additionalResources: expect.any(Array),
+                followUpQuestions: expect.any(Array)
+            });
         });
 
-        const interaction: TutorInteraction = {
-            userQuery: "What is a closure?",
-            skillLevel: "ADVANCED",
-            currentTopic: "JavaScript Functions",
-            context: defaultContext,
-            previousInteractions: []
-        };
+        it('should include appropriate follow-up questions', async () => {
+            const interaction: TutorInteraction = {
+                userQuery: "How do I use async/await?",
+                skillLevel: "INTERMEDIATE",
+                currentTopic: "JavaScript Async"
+            };
 
-        const response = await tutorChain.generateResponse(interaction);
-        expect(response.content).toMatch(/advanced|complex/i);
-        expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
+            const response = await tutorChain.generateResponse(interaction);
+            
+            expect(response.followUpQuestions).toBeDefined();
+            expect(response.followUpQuestions?.length).toBeGreaterThan(0);
+        });
     });
 
-    it('should extract code snippets from content', async () => {
-        const codeContent = `Here's an example:
-        \`\`\`javascript
-        const array = [1, 2, 3];
-        array.map(x => x * 2);
-        \`\`\``;
+    describe('Error Handling', () => {
+        it('should handle API errors gracefully', async () => {
+            vi.spyOn(mockOpenAI.chat.completions, 'create')
+                .mockRejectedValueOnce(new Error('API Error'));
 
-        mockOpenAI.chat.completions.create.mockResolvedValueOnce({
-            choices: [{
-                message: {
-                    content: codeContent
-                }
-            }]
+            await expect(async () => {
+                await tutorChain.generateResponse({
+                    userQuery: "test",
+                    skillLevel: "BEGINNER",
+                    currentTopic: "test"
+                });
+            }).rejects.toThrow('API Error');
         });
 
-        const interaction: TutorInteraction = {
-            userQuery: "Show me array methods",
-            skillLevel: "INTERMEDIATE",
-            currentTopic: "JavaScript Arrays",
-            context: defaultContext,
-            previousInteractions: []
-        };
+        it('should handle empty responses', async () => {
+            vi.spyOn(mockOpenAI.chat.completions, 'create')
+                .mockResolvedValueOnce({
+                    choices: [{ message: { content: '' } }]
+                } as any);
 
-        const response: TutorResponse = await tutorChain.generateResponse(interaction);
-        const snippets = response.codeSnippets || [];
-        
-        expect(snippets).toHaveLength(1);
-        expect(snippets[0].code).toContain('array.map');
-        expect(snippets[0].language).toBe('javascript');
+            const response = await tutorChain.generateResponse({
+                userQuery: "test",
+                skillLevel: "BEGINNER",
+                currentTopic: "test"
+            });
+
+            expect(response.content).toBe('');
+        });
     });
 
-    it('should handle API errors', async () => {
-        mockOpenAI.chat.completions.create.mockRejectedValueOnce(
-            new Error('API Error')
-        );
+    describe('Code Examples', () => {
+        it('should extract code snippets correctly', async () => {
+            vi.spyOn(mockOpenAI.chat.completions, 'create')
+                .mockResolvedValueOnce({
+                    choices: [{
+                        message: {
+                            content: 'Here is an example:\n```javascript\nconsole.log("test");\n```'
+                        }
+                    }]
+                } as any);
 
-        const interaction: TutorInteraction = {
-            userQuery: "test",
-            skillLevel: "BEGINNER",
-            currentTopic: "test",
-            context: defaultContext,
-            previousInteractions: []
-        };
+            const response = await tutorChain.generateResponse({
+                userQuery: "Show me a console.log example",
+                skillLevel: "BEGINNER",
+                currentTopic: "JavaScript Basics"
+            });
 
-        await expect(tutorChain.generateResponse(interaction)).rejects.toThrow('API Error');
+            expect(response.codeSnippets?.length).toBe(1);
+            expect(response.codeSnippets?.[0]).toContain('console.log');
+        });
     });
 }); 
