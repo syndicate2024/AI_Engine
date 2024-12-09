@@ -9,8 +9,8 @@ import {
   Resource
 } from '../../../types';
 
-export class AITutorAgent {
-  private model: ChatOpenAI;
+export class TutorAgentChain {
+  public model: ChatOpenAI;
   private learningContext: LearningContext;
 
   constructor() {
@@ -28,13 +28,31 @@ export class AITutorAgent {
     };
   }
 
-  // Main response generation method
   async generateResponse(input: TutorInteraction): Promise<TutorResponse> {
     try {
+      // Validate input
+      this.validateInput(input);
+
+      // Determine response type
       const responseType = this.determineResponseType(input.userQuery);
+
+      // Generate response
       const rawResponse = await this.generateSpecificResponse(input, responseType);
+      if (!rawResponse) {
+        return {
+          type: responseType,
+          content: 'No response generated. Please try again.',
+          additionalResources: [],
+          followUpQuestions: []
+        };
+      }
+
+      // Format response
       const formattedResponse = await this.formatResponse(rawResponse, input, responseType);
+
+      // Update learning context
       this.updateContext(input);
+
       return formattedResponse;
     } catch (error) {
       console.error('Error generating tutor response:', error);
@@ -42,15 +60,29 @@ export class AITutorAgent {
     }
   }
 
+  private validateInput(input: TutorInteraction): void {
+    if (!input.userQuery || !input.skillLevel || !input.currentTopic) {
+      throw new Error('Invalid input: Missing required fields');
+    }
+
+    if (!['BEGINNER', 'INTERMEDIATE', 'ADVANCED'].includes(input.skillLevel)) {
+      throw new Error('Invalid skill level');
+    }
+  }
+
   private determineResponseType(query: string): ResponseType {
-    if (query.toLowerCase().includes('error')) {
+    const lowerQuery = query.toLowerCase();
+    if (lowerQuery.includes('error')) {
       return ResponseType.ERROR_HELP;
     }
-    if (query.toLowerCase().includes('review')) {
+    if (lowerQuery.includes('review')) {
       return ResponseType.CODE_REVIEW;
     }
-    if (query.toLowerCase().includes('best') && query.toLowerCase().includes('practice')) {
+    if (lowerQuery.includes('best') && lowerQuery.includes('practice')) {
       return ResponseType.BEST_PRACTICES;
+    }
+    if (lowerQuery.includes('resource') || lowerQuery.includes('more practice') || lowerQuery.includes('what next')) {
+      return ResponseType.RESOURCE_SUGGESTION;
     }
     return ResponseType.CONCEPT_EXPLANATION;
   }
@@ -59,9 +91,8 @@ export class AITutorAgent {
     input: TutorInteraction,
     type: ResponseType
   ): Promise<string> {
-    const response = await this.model.invoke(
-      await this.getPromptForResponseType(input, type)
-    );
+    const prompt = await this.getPromptForResponseType(input, type);
+    const response = await this.model.invoke(prompt);
     return response.content.toString();
   }
 
@@ -74,23 +105,23 @@ export class AITutorAgent {
         return TUTOR_PROMPTS.conceptExplanation.format({
           concept: input.currentTopic,
           skillLevel: input.skillLevel,
-          context: input.context.recentConcepts.join(', '),
-          focusAreas: input.context.struggledTopics.join(', ')
+          context: input.context?.recentConcepts?.join(', ') || '',
+          focusAreas: input.context?.struggledTopics?.join(', ') || ''
         });
       
       case ResponseType.CODE_REVIEW:
         return TUTOR_PROMPTS.codeReview.format({
           code: input.userQuery,
           skillLevel: input.skillLevel,
-          previousInteractions: JSON.stringify(input.previousInteractions)
+          previousInteractions: JSON.stringify(input.previousInteractions || [])
         });
       
       case ResponseType.ERROR_HELP:
         return TUTOR_PROMPTS.errorHelp.format({
           error: input.userQuery,
-          context: input.context.currentModule,
+          context: input.context?.currentModule || '',
           skillLevel: input.skillLevel,
-          previousAttempts: input.previousInteractions
+          previousAttempts: (input.previousInteractions || [])
             .map((interaction: TutorResponse) => interaction.content)
             .join('\n')
         });
@@ -99,8 +130,8 @@ export class AITutorAgent {
         return TUTOR_PROMPTS.practiceExercise.format({
           concept: input.currentTopic,
           skillLevel: input.skillLevel,
-          relatedConcepts: input.context.recentConcepts.join(', '),
-          previousExercises: input.previousInteractions
+          relatedConcepts: input.context?.recentConcepts?.join(', ') || '',
+          previousExercises: (input.previousInteractions || [])
             .filter((interaction: TutorResponse) => interaction.type === ResponseType.BEST_PRACTICES)
             .map((interaction: TutorResponse) => interaction.content)
             .join('\n')
@@ -121,7 +152,6 @@ export class AITutorAgent {
     input: TutorInteraction,
     type: ResponseType
   ): Promise<TutorResponse> {
-    // Format using the standard response template
     const formattedContent = await this.model.invoke(
       RESPONSE_TEMPLATES.standardResponse.format({
         topic: input.currentTopic,
@@ -131,27 +161,20 @@ export class AITutorAgent {
       })
     );
 
-    // Extract code snippets if present
     const codeSnippets = this.extractCodeSnippets(formattedContent.content.toString());
-    
-    // Generate follow-up questions based on the response
-    const followUpQuestions = await this.generateFollowUpQuestions(
-      input,
-      formattedContent.content.toString()
-    );
+    const followUpQuestions = await this.generateFollowUpQuestions(input, formattedContent.content.toString());
+    const additionalResources = await this.generateResources(input);
 
     return {
       type,
       content: formattedContent.content.toString(),
       followUpQuestions,
       codeSnippets,
-      confidence: 1.0,
-      additionalResources: await this.generateResources(input)
+      additionalResources
     };
   }
 
   private extractCodeSnippets(content: string): CodeSnippet[] {
-    // Simple regex to extract code blocks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     const snippets: CodeSnippet[] = [];
     let match;
@@ -172,7 +195,6 @@ export class AITutorAgent {
     input: TutorInteraction,
     rawResponse: string
   ): Promise<string[]> {
-    // Extract 2-3 follow-up questions from the response
     const questions = rawResponse
       .split('\n')
       .filter(line => line.trim().endsWith('?'))
@@ -180,19 +202,19 @@ export class AITutorAgent {
 
     return questions.length > 0 ? questions : [
       `Can you explain more about ${input.currentTopic}?`,
-      `How would you apply this in a real-world scenario?`
+      `How would you apply this in a real-world scenario?`,
+      `What are some common pitfalls to avoid?`
     ];
   }
 
   private async generateResources(
     input: TutorInteraction
   ): Promise<Resource[]> {
-    // Generate resources based on the current topic
-    return [
+    const baseResources: Resource[] = [
       {
         type: 'documentation',
         title: `Official Documentation - ${input.currentTopic}`,
-        relevance: 1
+        relevance: 1.0
       },
       {
         type: 'tutorial',
@@ -205,14 +227,27 @@ export class AITutorAgent {
         relevance: 0.9
       }
     ];
+
+    // Add context-specific resources
+    if (input.context?.struggledTopics?.length > 0) {
+      baseResources.push({
+        type: 'tutorial',
+        title: `Deep Dive: ${input.context.struggledTopics[0]}`,
+        relevance: 1.0
+      });
+    }
+
+    return baseResources;
   }
 
   private updateContext(input: TutorInteraction): void {
+    if (!input.context) return;
+
     this.learningContext = {
       ...input.context,
       recentConcepts: [
         input.currentTopic,
-        ...input.context.recentConcepts
+        ...(input.context.recentConcepts || [])
       ].slice(0, 5)
     };
   }

@@ -6,24 +6,10 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
-    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/temp_cleanup/**'],
     testTimeout: 30000,
-    hookTimeout: 30000,
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'dist/',
-        '**/*.d.ts',
-        '**/types/',
-        '**/mocks/'
-      ]
-    },
     setupFiles: [
-      path.resolve(__dirname, './src/test/setup.ts'),
-      path.resolve(__dirname, './src/test/integration.setup.ts')
-    ],
-    root: path.resolve(__dirname)
+      path.resolve(__dirname, './test/setup.ts')
+    ]
   }
 }); 

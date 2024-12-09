@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { TutorChain } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '@/types';
+import { AITutorAgent } from '../tutorChain';
+import { ResponseType, TutorInteraction } from '../../../types';
 
-describe('TutorChain Integration Tests', () => {
-  let tutorChain: TutorChain;
+describe('AITutorAgent Integration Tests', () => {
+  let tutorAgent: AITutorAgent;
 
   beforeEach(() => {
-    tutorChain = new TutorChain();
+    tutorAgent = new AITutorAgent();
   });
 
   describe('OpenAI Integration', () => {
@@ -17,7 +17,7 @@ describe('TutorChain Integration Tests', () => {
         currentTopic: "JavaScript Async"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.content).toBeTruthy();
       expect(response.type).toBeDefined();
@@ -30,7 +30,7 @@ describe('TutorChain Integration Tests', () => {
         currentTopic: "React Hooks"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.content.length).toBeGreaterThan(100);
       expect(response.followUpQuestions?.length).toBeGreaterThan(0);
@@ -45,7 +45,7 @@ describe('TutorChain Integration Tests', () => {
         currentTopic: "React State Management"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.content).toMatch(/redux|context|hooks/i);
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
@@ -58,7 +58,7 @@ describe('TutorChain Integration Tests', () => {
         currentTopic: "React State Management"
       };
 
-      const firstResponse = await tutorChain.generateResponse(firstInteraction);
+      const firstResponse = await tutorAgent.generateResponse(firstInteraction);
 
       const secondInteraction: TutorInteraction = {
         userQuery: "How does that compare to Context?",
@@ -67,7 +67,7 @@ describe('TutorChain Integration Tests', () => {
         previousInteractions: [firstResponse]
       };
 
-      const secondResponse = await tutorChain.generateResponse(secondInteraction);
+      const secondResponse = await tutorAgent.generateResponse(secondInteraction);
       
       expect(secondResponse.content).toMatch(/redux|context|comparison/i);
     });

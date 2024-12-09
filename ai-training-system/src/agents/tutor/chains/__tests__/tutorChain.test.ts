@@ -4,16 +4,16 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { TutorChain } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '@/types';
-import { mockTutorResponse } from '@/test/setup';
+import { AITutorAgent } from '../tutorChain';
+import { ResponseType, TutorInteraction } from '../../../types';
+import { mockTutorResponse } from '../../../../test/setup';
 
-describe('TutorChain Unit Tests', () => {
-  let tutorChain: TutorChain;
+describe('AITutorAgent Unit Tests', () => {
+  let tutorAgent: AITutorAgent;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    tutorChain = new TutorChain();
+    tutorAgent = new AITutorAgent();
   });
 
   describe('Basic Response Generation', () => {
@@ -24,7 +24,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Basics"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response).toMatchObject({
         type: ResponseType.CONCEPT_EXPLANATION,
@@ -41,7 +41,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Async"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.followUpQuestions).toBeDefined();
       expect(response.followUpQuestions?.length).toBeGreaterThan(0);
@@ -56,7 +56,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Functions"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
       expect(response.content).toMatch(/basic|fundamental|simple/i);
@@ -69,7 +69,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Functions"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.content).toMatch(/advanced|complex|detailed/i);
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
@@ -78,11 +78,11 @@ describe('TutorChain Unit Tests', () => {
 
   describe('Error Handling', () => {
     it('should handle API errors gracefully', async () => {
-      vi.spyOn(tutorChain['openai'].chat.completions, 'create')
+      vi.spyOn(tutorAgent['openai'].chat.completions, 'create')
         .mockRejectedValueOnce(new Error('API Error'));
 
       await expect(async () => {
-        await tutorChain.generateResponse({
+        await tutorAgent.generateResponse({
           userQuery: "test",
           skillLevel: "BEGINNER",
           currentTopic: "test"
@@ -91,12 +91,12 @@ describe('TutorChain Unit Tests', () => {
     });
 
     it('should handle empty responses', async () => {
-      vi.spyOn(tutorChain['openai'].chat.completions, 'create')
+      vi.spyOn(tutorAgent['openai'].chat.completions, 'create')
         .mockResolvedValueOnce({
           choices: [{ message: { content: '' } }]
         } as any);
 
-      const response = await tutorChain.generateResponse({
+      const response = await tutorAgent.generateResponse({
         userQuery: "test",
         skillLevel: "BEGINNER",
         currentTopic: "test"
@@ -115,7 +115,7 @@ describe('TutorChain Unit Tests', () => {
         previousInteractions: [mockTutorResponse]
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       expect(response.content).toBeTruthy();
     });
 
@@ -132,7 +132,7 @@ describe('TutorChain Unit Tests', () => {
         }]
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       expect(response.content).toMatch(/react|hooks|performance/i);
     });
   });
@@ -145,7 +145,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Arrays"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.codeSnippets).toBeDefined();
       expect(response.codeSnippets?.length).toBeGreaterThan(0);
@@ -159,7 +159,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "JavaScript Basics"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.codeSnippets?.[0]).toMatch(/for\s*\(/); // Should contain for loop syntax
       expect(response.content).toMatch(/loop|iterate/i);
@@ -174,7 +174,7 @@ describe('TutorChain Unit Tests', () => {
         currentTopic: "React Hooks"
       };
 
-      const response = await tutorChain.generateResponse(interaction);
+      const response = await tutorAgent.generateResponse(interaction);
       
       expect(response.additionalResources).toBeDefined();
       expect(response.additionalResources?.length).toBeGreaterThan(0);
