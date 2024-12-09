@@ -12,7 +12,7 @@ import {
 
 export class AITutorAgent {
   private model: ChatOpenAI;
-  private context: LearningContext;
+  private learningContext: LearningContext;
 
   constructor() {
     this.model = new ChatOpenAI({
@@ -21,7 +21,7 @@ export class AITutorAgent {
     });
 
     // Initialize with empty context
-    this.context = {
+    this.learningContext = {
       currentModule: '',
       recentConcepts: [],
       struggledTopics: [],
@@ -33,9 +33,9 @@ export class AITutorAgent {
   async generateResponse(input: TutorInteraction): Promise<TutorResponse> {
     try {
       const responseType = this.determineResponseType(input.userQuery);
-      const response = await this.generateSpecificResponse(input, responseType);
-      const formattedResponse = await this.formatResponse(response, input, responseType);
-      this.updateContext(input, response);
+      const rawResponse = await this.generateSpecificResponse(input, responseType);
+      const formattedResponse = await this.formatResponse(rawResponse, input, responseType);
+      this.updateContext(input);
       return formattedResponse;
     } catch (error) {
       console.error('Error generating tutor response:', error);
@@ -58,19 +58,19 @@ export class AITutorAgent {
 
   private async generateSpecificResponse(
     input: TutorInteraction,
-    responseType: ResponseType
+    type: ResponseType
   ): Promise<string> {
     const response = await this.model.invoke(
-      await this.getPromptForResponseType(input, responseType)
+      await this.getPromptForResponseType(input, type)
     );
     return response.content.toString();
   }
 
   private async getPromptForResponseType(
     input: TutorInteraction,
-    responseType: ResponseType
+    type: ResponseType
   ): Promise<string> {
-    switch (responseType) {
+    switch (type) {
       case ResponseType.CONCEPT_EXPLANATION:
         return TUTOR_PROMPTS.conceptExplanation.format({
           concept: input.currentTopic,
@@ -120,14 +120,14 @@ export class AITutorAgent {
   private async formatResponse(
     content: string,
     input: TutorInteraction,
-    responseType: ResponseType
+    type: ResponseType
   ): Promise<TutorResponse> {
     // Format using the standard response template
     const formattedContent = await this.model.invoke(
       await RESPONSE_TEMPLATES.standardResponse.format({
         topic: input.currentTopic,
         skillLevel: input.skillLevel,
-        responseType: responseType,
+        responseType: type,
         content: content
       })
     );
@@ -142,11 +142,12 @@ export class AITutorAgent {
     );
 
     return {
-      type: responseType,
+      type,
       content: formattedContent.content.toString(),
       followUpQuestions,
       codeSnippets,
-      additionalResources: await this.generateResources(input, responseType)
+      confidence: 1.0,
+      additionalResources: await this.generateResources(input)
     };
   }
 
@@ -170,10 +171,10 @@ export class AITutorAgent {
 
   private async generateFollowUpQuestions(
     input: TutorInteraction,
-    response: string
+    rawResponse: string
   ): Promise<string[]> {
     // Extract 2-3 follow-up questions from the response
-    const questions = response
+    const questions = rawResponse
       .split('\n')
       .filter(line => line.trim().endsWith('?'))
       .slice(0, 3);
@@ -185,10 +186,9 @@ export class AITutorAgent {
   }
 
   private async generateResources(
-    input: TutorInteraction,
-    responseType: ResponseType
+    input: TutorInteraction
   ): Promise<Resource[]> {
-    // For now, return some static resources based on the topic
+    // Generate resources based on the current topic
     return [
       {
         type: 'documentation',
@@ -208,8 +208,8 @@ export class AITutorAgent {
     ];
   }
 
-  private updateContext(input: TutorInteraction, response: string): void {
-    this.context = {
+  private updateContext(input: TutorInteraction): void {
+    this.learningContext = {
       ...input.context,
       recentConcepts: [
         input.currentTopic,
