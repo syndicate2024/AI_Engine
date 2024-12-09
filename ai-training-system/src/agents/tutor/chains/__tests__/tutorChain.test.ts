@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TutorChain } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '../../../../types';
+import { ResponseType, TutorInteraction, TutorResponse } from '../../../../types';
 import { mockOpenAI } from '../../../../../test/setup';
 
 describe('TutorChain', () => {
@@ -67,10 +67,12 @@ describe('TutorChain', () => {
             previousInteractions: []
         };
 
-        const response = await tutorChain.generateResponse(interaction);
-        expect(response.codeSnippets).toBeDefined();
-        expect(response.codeSnippets).toHaveLength(1);
-        expect(response.codeSnippets[0]).toContain('array.map');
+        const response: TutorResponse = await tutorChain.generateResponse(interaction);
+        const snippets = response.codeSnippets || [];
+        
+        expect(snippets).toHaveLength(1);
+        expect(snippets[0].code).toContain('array.map');
+        expect(snippets[0].language).toBe('javascript');
     });
 
     it('should handle API errors', async () => {

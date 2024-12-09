@@ -28,12 +28,20 @@ export class TutorChain {
 
             const content = completion?.choices?.[0]?.message?.content || '';
 
+            // Ensure codeSnippets is always defined as an array
+            const codeSnippets = this.extractCodeSnippets(content).map(code => ({
+                code,
+                explanation: 'Code example',
+                language: 'javascript',
+                focus: []
+            }));
+
             return {
                 type: ResponseType.CONCEPT_EXPLANATION,
                 content,
                 additionalResources: [],
                 followUpQuestions: [],
-                codeSnippets: this.extractCodeSnippets(content)
+                codeSnippets
             };
         } catch (error) {
             console.error('Error generating response:', error);
