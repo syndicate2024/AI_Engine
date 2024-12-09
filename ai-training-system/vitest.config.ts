@@ -20,10 +20,10 @@ export default defineConfig({
         '**/mocks/'
       ]
     },
-    setupFiles: {
-      'src/**/*.test.ts': './src/test/setup.ts',
-      'src/**/*.integration.test.ts': './src/test/integration.setup.ts'
-    },
+    setupFiles: [
+      path.resolve(__dirname, './src/test/setup.ts'),
+      path.resolve(__dirname, './src/test/integration.setup.ts')
+    ],
     root: path.resolve(__dirname)
   }
 }); 

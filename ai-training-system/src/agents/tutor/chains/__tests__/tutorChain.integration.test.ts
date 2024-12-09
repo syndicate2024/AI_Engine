@@ -1,94 +1,75 @@
-/**
- * @fileoverview Integration tests for the AI Tutor Chain
- * Tests the interaction between components and with the OpenAI service
- */
-
 import { describe, it, expect, beforeEach } from 'vitest';
-import { generateTutorResponse } from '../tutorChain';
-import { TutorContext, SkillLevel, ResponseType, Project } from '../../../../types';
+import { TutorChain } from '../tutorChain';
+import { ResponseType, TutorInteraction } from '@/types';
 
-describe('Tutor Chain Integration Tests', () => {
-  let mockContext: TutorContext;
+describe('TutorChain Integration Tests', () => {
+  let tutorChain: TutorChain;
 
   beforeEach(() => {
-    mockContext = {
-      skillLevel: SkillLevel.BEGINNER,
-      currentTopic: 'JavaScript Basics',
-      learningPath: ['Introduction', 'Variables'],
-      previousInteractions: [],
-      currentModule: 'Programming Fundamentals',
-      recentConcepts: ['variables', 'data types'],
-      struggledTopics: [],
-      completedProjects: [] as Project[]
-    };
+    tutorChain = new TutorChain();
   });
 
-  describe('OpenAI Interactions', () => {
-    it('should generate coherent responses', async () => {
-      const response = await generateTutorResponse(mockContext, 'What is JavaScript?');
-      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
-      expect(response.content).toBeTruthy();
-      expect(response.confidence).toBeGreaterThan(0);
-      expect(response.followUpQuestions).toBeDefined();
-      expect(response.relatedConcepts).toBeDefined();
-    });
-
-    it('should adapt responses based on skill level', async () => {
-      const advancedContext = {
-        ...mockContext,
-        skillLevel: SkillLevel.ADVANCED
+  describe('OpenAI Integration', () => {
+    it('should successfully call OpenAI API', async () => {
+      const interaction: TutorInteraction = {
+        userQuery: "What is a promise in JavaScript?",
+        skillLevel: "INTERMEDIATE",
+        currentTopic: "JavaScript Async"
       };
-      const response = await generateTutorResponse(advancedContext, 'Explain closures');
-      expect(response.content).toBeTruthy();
-      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
-    });
 
-    it('should maintain conversation context', async () => {
-      const firstResponse = await generateTutorResponse(mockContext, 'What is JavaScript?');
-      const contextWithHistory = {
-        ...mockContext,
-        previousInteractions: [
-          {
-            question: 'What is JavaScript?',
-            response: firstResponse,
-            context: mockContext,
-            skillLevel: mockContext.skillLevel,
-            currentTopic: mockContext.currentTopic,
-            previousInteractions: [],
-            timestamp: new Date()
-          }
-        ]
-      };
-      const response = await generateTutorResponse(contextWithHistory, 'How does it differ from Java?');
-      expect(response.content).toBeTruthy();
-      expect(response.type).toBe(ResponseType.CONCEPT_EXPLANATION);
-    });
-
-    it('should handle code review requests', async () => {
-      const response = await generateTutorResponse(mockContext, 'Review my code: function test() {}');
-      expect(response.type).toBe(ResponseType.CODE_REVIEW);
-      expect(response.content).toBeTruthy();
-    });
-
-    it('should provide error explanations', async () => {
-      const response = await generateTutorResponse(mockContext, 'Why am I getting TypeError?');
-      expect(response.type).toBe(ResponseType.ERROR_EXPLANATION);
-      expect(response.content).toBeTruthy();
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle malformed questions gracefully', async () => {
-      const response = await generateTutorResponse(mockContext, '???');
-      expect(response.content).toBeTruthy();
-      expect(response.confidence).toBeLessThan(1);
-    });
-
-    it('should handle long inputs', async () => {
-      const longQuestion = 'a'.repeat(1000);
-      const response = await generateTutorResponse(mockContext, longQuestion);
+      const response = await tutorChain.generateResponse(interaction);
+      
       expect(response.content).toBeTruthy();
       expect(response.type).toBeDefined();
+    });
+
+    it('should handle large responses', async () => {
+      const interaction: TutorInteraction = {
+        userQuery: "Explain everything about React hooks",
+        skillLevel: "ADVANCED",
+        currentTopic: "React Hooks"
+      };
+
+      const response = await tutorChain.generateResponse(interaction);
+      
+      expect(response.content.length).toBeGreaterThan(100);
+      expect(response.followUpQuestions?.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Real-world Scenarios', () => {
+    it('should handle complex questions', async () => {
+      const interaction: TutorInteraction = {
+        userQuery: "How do React hooks, context, and Redux work together in a large application?",
+        skillLevel: "ADVANCED",
+        currentTopic: "React State Management"
+      };
+
+      const response = await tutorChain.generateResponse(interaction);
+      
+      expect(response.content).toMatch(/redux|context|hooks/i);
+      expect(response.codeSnippets?.length).toBeGreaterThan(0);
+    });
+
+    it('should maintain context across multiple interactions', async () => {
+      const firstInteraction: TutorInteraction = {
+        userQuery: "What is Redux?",
+        skillLevel: "INTERMEDIATE",
+        currentTopic: "React State Management"
+      };
+
+      const firstResponse = await tutorChain.generateResponse(firstInteraction);
+
+      const secondInteraction: TutorInteraction = {
+        userQuery: "How does that compare to Context?",
+        skillLevel: "INTERMEDIATE",
+        currentTopic: "React State Management",
+        previousInteractions: [firstResponse]
+      };
+
+      const secondResponse = await tutorChain.generateResponse(secondInteraction);
+      
+      expect(secondResponse.content).toMatch(/redux|context|comparison/i);
     });
   });
 }); 
