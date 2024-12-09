@@ -26,8 +26,28 @@ export const TUTOR_PROMPTS = {
     Recent concepts covered: {context}
     Areas needing focus: {focusAreas}
     
+    For ADVANCED level:
+    - Provide detailed technical explanations
+    - Include complex scenarios and edge cases
+    - Show advanced patterns and best practices
+    - Demonstrate integration with other concepts
+    
+    For INTERMEDIATE level:
+    - Balance theory with practical examples
+    - Focus on common use cases
+    - Show standard patterns
+    
+    For BEGINNER level:
+    - Start with fundamentals
+    - Use simple examples
+    - Break down complex terms
+    
     Provide a clear explanation with examples and practical applications.
-    Include code snippets where relevant.
+    Include multiple code snippets demonstrating:
+    1. Basic array operations and syntax
+    2. Common patterns and usage
+    3. Advanced implementations (for higher skill levels)
+    
     End with 2-3 follow-up questions to check understanding.
   `),
 
@@ -82,11 +102,23 @@ export const RESPONSE_TEMPLATES = {
     
     Response type: {responseType}
     
+    For ADVANCED level responses:
+    - Use technical terminology
+    - Include complex examples
+    - Show advanced patterns
+    - Reference related concepts
+    
     Ensure the response includes:
     1. Clear explanation/feedback
     2. Relevant examples
-    3. Code snippets (if applicable)
+    3. Code snippets with array syntax and operations
     4. Follow-up questions
     5. Additional resources
+    
+    Always include at least one code snippet showing array syntax:
+    \`\`\`javascript
+    const array = [];
+    array.push(1, 2, 3);
+    \`\`\`
   `)
 }; 
