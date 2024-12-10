@@ -30,8 +30,8 @@ See detailed checklists in respective module folders.
 - [x] Response handlers
 - [x] Knowledge assessment
 - [x] Integration points
-- [ ] Testing suite
-- [ ] Documentation
+- [x] Testing suite
+- [x] Documentation
 
 ### Assessment Agent Module
 - [ ] Base implementation
