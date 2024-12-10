@@ -24,3 +24,12 @@ duplicate_removal_log.md
 ../handoffs/
 ../.gitignore
 ../package-lock.json
+
+# Logs
+restore_log.md
+duplicate_removal_log.md
+
+# Parent directory files
+../handoffs/
+../.gitignore
+../package-lock.json
