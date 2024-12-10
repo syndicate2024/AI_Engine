@@ -6,9 +6,7 @@ $criticalPatterns = @(
     "\.test\.",    # Test files
     "config",      # Configuration files
     "types\.ts$",  # Type definitions
-    "chain\.ts$",  # Chain files
-    "master",      # Master files
-    "workflow"     # Workflow files
+    "chain\.ts$"   # Chain files
 )
 $backupDir = "deleted_duplicates"
 $logFile = "duplicate_removal_log.md"
@@ -27,12 +25,10 @@ Created: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 "@ | Set-Content $logFile
 
 # Get all files and their hashes
-Write-Host "`nScanning for duplicates..." -ForegroundColor Cyan
-
 $files = Get-ChildItem -Recurse -File | 
-    Where-Object { $_.FullName -notmatch ($excludedDirs -join "|") } |
+    Where-Object { $_.FullName -notmatch ($excludedDirs -join '|') } |
     ForEach-Object {
-        $isCritical = $criticalPatterns | Where-Object { $_.Name -match $_ }
+        $isCritical = $criticalPatterns | Where-Object { $_.FullName -match $_ }
         @{
             Path = $_.FullName
             Hash = (Get-FileHash $_.FullName).Hash
@@ -45,7 +41,7 @@ $files = Get-ChildItem -Recurse -File |
 # Group files by hash to find duplicates
 $duplicates = $files | Group-Object Hash | Where-Object { $_.Count -gt 1 }
 
-Write-Host "`n=== Found $($duplicates.Count) duplicate groups ===`n" -ForegroundColor Cyan
+Write-Host "`n=== Processing Duplicates ===`n" -ForegroundColor Cyan
 
 foreach ($group in $duplicates) {
     $originalFile = $group.Group | Sort-Object LastWriteTime | Select-Object -First 1
@@ -61,7 +57,7 @@ Duplicates found:
 "@ | Add-Content $logFile
 
     foreach ($duplicate in $duplicateFiles) {
-        $backupPath = Join-Path $backupDir ($duplicate.Path -replace ":", "" -replace "\\", "_")
+        $backupPath = Join-Path $backupDir ($duplicate.Path -replace ':', '' -replace '\\', '_')
         
         # Show file info and ask for action
         Write-Host "`nDuplicate found:" -ForegroundColor Cyan
@@ -77,53 +73,43 @@ Duplicates found:
                 "- SKIPPED (CRITICAL): $($duplicate.Path)" | Add-Content $logFile
                 continue
             }
-        }
-
-        Write-Host "Actions available:" -ForegroundColor Cyan
-        Write-Host "1) Move to backup (m)" -ForegroundColor Yellow
-        Write-Host "2) Skip (s)" -ForegroundColor Yellow
-        Write-Host "3) View file content (v)" -ForegroundColor Yellow
-        Write-Host "4) Compare with original (c)" -ForegroundColor Yellow
-        Write-Host "5) Open in default editor (o)" -ForegroundColor Yellow
-        
-        $action = Read-Host "Choose action (m/s/v/c/o)"
-        
-        switch ($action.ToLower()) {
-            "v" {
-                Write-Host "`nFile content:" -ForegroundColor Cyan
-                Get-Content $duplicate.Path
-                Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
-                $proceed = Read-Host
-                if ($proceed -ne "y") {
+        } else {
+            Write-Host "Actions available:" -ForegroundColor Cyan
+            Write-Host "1) Move to backup (m)" -ForegroundColor Yellow
+            Write-Host "2) Skip (s)" -ForegroundColor Yellow
+            Write-Host "3) View file content (v)" -ForegroundColor Yellow
+            Write-Host "4) Compare with original (c)" -ForegroundColor Yellow
+            
+            $action = Read-Host "Choose action (m/s/v/c)"
+            
+            switch ($action.ToLower()) {
+                "v" {
+                    Write-Host "`nFile content:" -ForegroundColor Cyan
+                    Get-Content $duplicate.Path
+                    Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
+                    $proceed = Read-Host
+                    if ($proceed -ne "y") {
+                        "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                        continue
+                    }
+                }
+                "c" {
+                    Write-Host "`nComparing files:" -ForegroundColor Cyan
+                    Compare-Object (Get-Content $originalFile.Path) (Get-Content $duplicate.Path)
+                    Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
+                    $proceed = Read-Host
+                    if ($proceed -ne "y") {
+                        "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                        continue
+                    }
+                }
+                "s" {
                     "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
                     continue
                 }
-            }
-            "c" {
-                Write-Host "`nComparing files:" -ForegroundColor Cyan
-                Compare-Object (Get-Content $originalFile.Path) (Get-Content $duplicate.Path)
-                Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
-                $proceed = Read-Host
-                if ($proceed -ne "y") {
-                    "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
-                    continue
+                default {
+                    # Continue with move
                 }
-            }
-            "o" {
-                Start-Process $duplicate.Path
-                Write-Host "`nProceed with move after viewing? (y/n)" -ForegroundColor Yellow
-                $proceed = Read-Host
-                if ($proceed -ne "y") {
-                    "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
-                    continue
-                }
-            }
-            "s" {
-                "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
-                continue
-            }
-            default {
-                # Continue with move
             }
         }
         
@@ -161,12 +147,3 @@ Write-Host "Total duplicate groups found: $($duplicates.Count)" -ForegroundColor
 - Total duplicate groups: $($duplicates.Count)
 - Processed on: $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 "@ | Add-Content $logFile
-
-# Show backup contents
-Write-Host "`nBackup folder location:" -ForegroundColor Cyan
-Write-Host $backupDir -ForegroundColor Yellow
-Write-Host "`nWould you like to open the backup folder? (y/n)" -ForegroundColor Yellow
-$response = Read-Host
-if ($response -eq "y") {
-    Invoke-Item $backupDir
-}

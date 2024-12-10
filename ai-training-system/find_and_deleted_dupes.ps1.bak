@@ -1,3 +1,8 @@
+# First backup the current script
+Copy-Item "find_and_deleted_dupes.ps1" "find_and_deleted_dupes.ps1.bak"
+
+# Create the updated version
+@'
 # Create a script to handle duplicate files with interactive choices
 $excludedDirs = @("node_modules", ".git", "bin", "obj")
 $criticalPatterns = @(
@@ -10,6 +15,20 @@ $criticalPatterns = @(
     "master",      # Master files
     "workflow"     # Workflow files
 )
+
+# Function to get relative path
+function Get-RelativePath {
+    param($fullPath)
+    return $fullPath.Replace((Get-Location).Path + "\", "")
+}
+
+# Add option to include backup directory
+Write-Host "`nWould you like to scan backup directory as well? (y/n)" -ForegroundColor Yellow
+$scanBackup = Read-Host
+if ($scanBackup -ne "y") {
+    $excludedDirs += "deleted_duplicates"
+}
+
 $backupDir = "deleted_duplicates"
 $logFile = "duplicate_removal_log.md"
 
@@ -54,7 +73,7 @@ foreach ($group in $duplicates) {
     # Log the group
     @"
 ## Duplicate Group (Hash: $($group.Name))
-- Original: $($originalFile.Path)
+- Original: $(Get-RelativePath $originalFile.Path)
 - Last Modified: $($originalFile.LastWriteTime)
 
 Duplicates found:
@@ -65,8 +84,8 @@ Duplicates found:
         
         # Show file info and ask for action
         Write-Host "`nDuplicate found:" -ForegroundColor Cyan
-        Write-Host "Original: $($originalFile.Path)" -ForegroundColor Green
-        Write-Host "Duplicate: $($duplicate.Path)" -ForegroundColor Yellow
+        Write-Host "Original: $(Get-RelativePath $originalFile.Path)" -ForegroundColor Green
+        Write-Host "Duplicate: $(Get-RelativePath $duplicate.Path)" -ForegroundColor Yellow
         
         if ($duplicate.IsCritical) {
             Write-Host "⚠️ WARNING: This appears to be a critical file!" -ForegroundColor Red
@@ -74,7 +93,7 @@ Duplicates found:
             $response = Read-Host
             if ($response -ne "CONFIRM") {
                 Write-Host "Skipping critical file..." -ForegroundColor Yellow
-                "- SKIPPED (CRITICAL): $($duplicate.Path)" | Add-Content $logFile
+                "- SKIPPED (CRITICAL): $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
                 continue
             }
         }
@@ -85,8 +104,9 @@ Duplicates found:
         Write-Host "3) View file content (v)" -ForegroundColor Yellow
         Write-Host "4) Compare with original (c)" -ForegroundColor Yellow
         Write-Host "5) Open in default editor (o)" -ForegroundColor Yellow
+        Write-Host "6) Show full path (f)" -ForegroundColor Yellow
         
-        $action = Read-Host "Choose action (m/s/v/c/o)"
+        $action = Read-Host "Choose action (m/s/v/c/o/f)"
         
         switch ($action.ToLower()) {
             "v" {
@@ -95,7 +115,7 @@ Duplicates found:
                 Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
                 $proceed = Read-Host
                 if ($proceed -ne "y") {
-                    "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                    "- SKIPPED (USER CHOICE): $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
                     continue
                 }
             }
@@ -105,7 +125,7 @@ Duplicates found:
                 Write-Host "`nProceed with move? (y/n)" -ForegroundColor Yellow
                 $proceed = Read-Host
                 if ($proceed -ne "y") {
-                    "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                    "- SKIPPED (USER CHOICE): $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
                     continue
                 }
             }
@@ -114,12 +134,18 @@ Duplicates found:
                 Write-Host "`nProceed with move after viewing? (y/n)" -ForegroundColor Yellow
                 $proceed = Read-Host
                 if ($proceed -ne "y") {
-                    "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                    "- SKIPPED (USER CHOICE): $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
                     continue
                 }
             }
+            "f" {
+                Write-Host "`nFull paths:" -ForegroundColor Cyan
+                Write-Host "Original: $($originalFile.Path)" -ForegroundColor Green
+                Write-Host "Duplicate: $($duplicate.Path)" -ForegroundColor Yellow
+                continue
+            }
             "s" {
-                "- SKIPPED (USER CHOICE): $($duplicate.Path)" | Add-Content $logFile
+                "- SKIPPED (USER CHOICE): $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
                 continue
             }
             default {
@@ -136,14 +162,14 @@ Duplicates found:
 
             # Move file to backup
             Move-Item -Path $duplicate.Path -Destination $backupPath -Force
-            Write-Host "Moved duplicate: $($duplicate.Path)" -ForegroundColor Green
+            Write-Host "Moved duplicate: $(Get-RelativePath $duplicate.Path)" -ForegroundColor Green
             
             # Log the removal
-            "- MOVED: $($duplicate.Path)" | Add-Content $logFile
+            "- MOVED: $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
         }
         catch {
-            Write-Host "Error processing: $($duplicate.Path)" -ForegroundColor Red
-            "  ERROR: Failed to move $($duplicate.Path)" | Add-Content $logFile
+            Write-Host "Error processing: $(Get-RelativePath $duplicate.Path)" -ForegroundColor Red
+            "  ERROR: Failed to move $(Get-RelativePath $duplicate.Path)" | Add-Content $logFile
         }
     }
     "" | Add-Content $logFile
@@ -170,3 +196,8 @@ $response = Read-Host
 if ($response -eq "y") {
     Invoke-Item $backupDir
 }
+'@ | Set-Content "find_and_deleted_dupes.ps1"
+
+Write-Host "`nScript updated with relative path display" -ForegroundColor Green
+Write-Host "Added 'f' option to show full paths when needed" -ForegroundColor Yellow
+Write-Host "Original backed up to: find_and_deleted_dupes.ps1.bak" -ForegroundColor Cyan
