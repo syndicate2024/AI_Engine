@@ -15,3 +15,12 @@ deleted_duplicates/
 # Parent project directories
 ../src/
 ../handoffs/
+
+# Logs
+restore_log.md
+duplicate_removal_log.md
+
+# Parent directory files
+../handoffs/
+../.gitignore
+../package-lock.json
