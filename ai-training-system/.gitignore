@@ -1,57 +1,13 @@
-# @ai-protected
-# Git Ignore
 
-# Environment Variables
+# Backup files only
+*.backup
+*.backup.*
+**/restore-backup.ps1
+test/setup.ts.backup
+
+# Temp directories
+deleted_duplicates/
+
+# Other
 .env
 .env.local
-.env.*.local
-.env.development
-.env.development.local
-.env.test
-.env.test.local
-.env.production
-.env.production.local
-.env.staging
-.env.staging.local
-
-# Dependencies
-node_modules/
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.pnpm-store/
-
-# Build outputs
-dist/
-build/
-out/
-.next/
-.nuxt/
-.output/
-
-# IDE and Editor
-.idea/
-.vscode/
-*.swp
-*.swo
-.DS_Store
-
-# Logs and Debug
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-
-# Testing
-/coverage
-/cypress/videos/
-/cypress/screenshots/
-
-# Temporary files
-tmp/
-temp/
-.temp/
-
-# Protection system
-.backup/
-version-backups/
