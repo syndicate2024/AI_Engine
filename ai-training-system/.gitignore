@@ -11,3 +11,7 @@ deleted_duplicates/
 # Other
 .env
 .env.local
+
+# Parent project directories
+../src/
+../handoffs/
