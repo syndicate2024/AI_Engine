@@ -1,3 +1,4 @@
+# @ai-protected
 # Daily Workflow - 2024-12-09
 
 ## Project: AI Training System

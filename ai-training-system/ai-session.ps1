@@ -1,3 +1,6 @@
+# @ai-protected
+# AI Session Management
+
 param(
     [Parameter(Mandatory=$false)]
     [string]$action = "start",  # 'start', 'end', or 'cleanup'

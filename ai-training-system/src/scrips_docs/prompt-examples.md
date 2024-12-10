@@ -1,3 +1,7 @@
+# @ai-protected
+
+# @ai-protected
+
 # AI Development Prompting Examples
 
 ## Scenario 1: Starting AI Tutor Agent Development

@@ -1,3 +1,6 @@
+// @ai-protected
+// Tutor Chain Integration Tests
+
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TutorChain } from '../tutorChain';
 import { ResponseType, TutorInteraction } from '../../../../types';

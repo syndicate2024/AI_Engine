@@ -1,3 +1,6 @@
+# @ai-protected
+
+
 ![langchain_starter_1](https://github.com/BenGardiner123/langchainjs-typescript/assets/61527372/2036a175-d156-4603-a959-8095298fdd99)
 # Langchain JS Starter Template
 

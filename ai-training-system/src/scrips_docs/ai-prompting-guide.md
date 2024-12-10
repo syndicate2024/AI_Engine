@@ -1,3 +1,4 @@
+# @ai-protected
 # AI Development Prompting Guide
 
 ## Role Definition Prompts

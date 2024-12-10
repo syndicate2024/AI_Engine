@@ -1,3 +1,4 @@
+# @ai-protected
 # Daily Workflow - {date}
 
 ## Project: AI Training System

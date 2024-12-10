@@ -1,3 +1,6 @@
+# @ai-protected
+
+# @ai-protected
 # recovery.ps1
 param(
     [Parameter(Mandatory=$true)]

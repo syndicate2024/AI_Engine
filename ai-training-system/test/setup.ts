@@ -1,3 +1,6 @@
+// @ai-protected
+// Test Setup
+
 import { beforeAll, vi } from 'vitest';
 import { ResponseType } from '../src/types';
 

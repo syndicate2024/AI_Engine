@@ -1,3 +1,6 @@
+// @ai-protected
+// Tutor Agent Chain
+
 import { TutorChain } from './tutorChain';
 import { TutorInteraction, TutorResponse, LearningContext } from '../../../types';
 

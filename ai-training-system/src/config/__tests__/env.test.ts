@@ -1,3 +1,8 @@
+// @ai-protected
+
+// @ai-protected
+// Environment Configuration Tests
+
 import { describe, it, expect } from 'vitest';
 import { envSchema } from '../../config/env';
 

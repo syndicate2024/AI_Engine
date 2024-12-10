@@ -1,3 +1,6 @@
+# @ai-protected
+# New Session Start
+
 Usage Instructions
 
 Save this as ai-session.ps1 in your project root

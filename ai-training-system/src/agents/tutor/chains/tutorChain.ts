@@ -1,3 +1,6 @@
+// @ai-protected
+// Tutor Chain
+
 import OpenAI from 'openai';
 import { TutorInteraction, TutorResponse, ResponseType } from '../../../types';
 import env from '../../../config/env';

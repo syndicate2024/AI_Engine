@@ -1,3 +1,6 @@
+// @ai-protected
+
+
 export enum ResponseType {
   CONCEPT_EXPLANATION = 'CONCEPT_EXPLANATION',
   CODE_EXAMPLE = 'CODE_EXAMPLE',

@@ -1,3 +1,6 @@
+// @ai-protected
+// Tutor Chain Unit Tests
+
 /**
  * @fileoverview Unit tests for the AI Tutor Chain
  * Tests the core functionality of the tutor chain without making actual API calls

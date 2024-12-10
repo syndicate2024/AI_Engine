@@ -1,3 +1,7 @@
+# @ai-protected
+
+# @ai-protected
+
 # Project Setup and Structure Implementation Guide
 
 ## Setup Order

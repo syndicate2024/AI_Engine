@@ -1,3 +1,4 @@
+# @ai-protected
 # protect-versions.ps1
 param(
     [Parameter(Mandatory=$true)]

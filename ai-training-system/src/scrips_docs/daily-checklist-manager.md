@@ -1,3 +1,6 @@
+# @ai-protected
+# Daily Checklist Manager
+
 # Daily Checklist Management System
 
 ## PowerShell Script for Daily Checklist Management

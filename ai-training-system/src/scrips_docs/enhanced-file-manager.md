@@ -1,3 +1,5 @@
+# @ai-protected
+
 # Enhanced File Management and Change Tracking System
 
 ```powershell

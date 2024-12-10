@@ -1,3 +1,5 @@
+# @ai-protected
+
 # PowerShell Commands and Project Structure Guide
 
 ## Project Structure

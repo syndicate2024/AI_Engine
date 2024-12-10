@@ -1,3 +1,7 @@
+# @ai-protected
+
+# @ai-protected
+
 # AI-Powered JavaScript Training System Master Plan
 
 ## Project Overview

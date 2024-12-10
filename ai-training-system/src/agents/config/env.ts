@@ -1,3 +1,8 @@
+// @ai-protected
+
+// @ai-protected
+// Environment Configuration
+
 import dotenv from 'dotenv';
 import { z } from 'zod';
 

@@ -1,3 +1,4 @@
+# @ai-protected
 # Student-Friendly Automation Scripts Guide
 
 ## Overview

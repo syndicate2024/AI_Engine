@@ -1,3 +1,5 @@
+# @ai-protected
+
 # AI Training System Development Guide
 *Master Index and Reference*
 

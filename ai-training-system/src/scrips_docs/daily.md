@@ -1,3 +1,6 @@
+# @ai-protected
+# Daily Development Workflow and Tracking System
+
 ## Development Principles
 
 1. **One Thing at a Time**

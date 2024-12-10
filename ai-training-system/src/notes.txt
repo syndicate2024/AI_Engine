@@ -1,3 +1,5 @@
+# @ai-protected
+
 From what I understand, you want to build an AI-powered training system that will help developers learn various technologies, with the system itself being built using JavaScript frameworks. Is this correct?
 --yes
 

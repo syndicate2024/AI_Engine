@@ -1,3 +1,5 @@
+# @ai-protected
+
 # AI Tutor Agent Specification
 
 ## Overview
