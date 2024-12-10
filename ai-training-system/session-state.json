@@ -1,0 +1,35 @@
+{
+  "project": {
+    "activeModules": [
+      "file-protection",
+      "version-control",
+      "session-handoff"
+    ],
+    "lastUpdate": "2024-12-09T23:32:25.8717122-08:00",
+    "currentPhase": "setup",
+    "name": "AI Training System"
+  },
+  "protectedFiles": {
+    "lastBackup": "2024-12-09T23:32:25.8730433-08:00",
+    "paths": [
+      "src/core/*",
+      "config/*"
+    ]
+  },
+  "sessionHistory": [],
+  "systemState": {
+    "environment": "development",
+    "frameworkVersions": {
+      "typescript": "5.0.0",
+      "langchain": "latest",
+      "next": "14.0.0",
+      "react": "18.2.0"
+    },
+    "criticalPaths": [
+      "src/agents/core",
+      "src/config",
+      "src/types",
+      "scripts"
+    ]
+  }
+}
