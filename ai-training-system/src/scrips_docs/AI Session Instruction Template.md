@@ -1,9 +1,9 @@
 # @ai-protected
-# AI Session Instructions
+# Daily AI Session Instructions
 
-Please help me continue working on this project. First:
+Please help me continue working on this project. First, check our current state and history:
 
-1. Check our current state:
+1. Check current state and protected files:
 ```powershell
 Get-Content session-state.json
 ```
@@ -13,15 +13,53 @@ Get-Content session-state.json
 Get-Content "handoffs/latest.md"
 ```
 
-Please read these files and:
-- Confirm you understand our current project state
-- Note any active tasks or pending work
-- Be aware of protected files and directories
-- Update the handoff as we work
+## Protection Rules
+Before modifying any files:
+- Check for @ai-protected markers in file headers
+- Never modify files marked as @ai-protected without permission
+- Ask before modifying protected paths listed in session-state.json
+- Document all changes to protected files
 
-When we're done:
-- Update the handoff with what we accomplished
-- List any pending tasks or next steps
-- Note any important context for the next session
+## Protected Paths
+The following are protected:
+- src/core/* - Core system files
+- config/* - Configuration files
+- Any file with @ai-protected header
+- Any .env files
+- package.json and similar config files
 
-Can you please check these files and let me know you understand where we left off?
+## File Recovery
+If we need to recover deleted files:
+1. Check the file's status in session-state.json
+2. For git-tracked files: `git checkout HEAD -- filename`
+3. Request recovery assistance if needed
+
+## Handoff Protocol
+As we work, please:
+1. Document all changes in the handoff
+2. Track modified files
+3. Note any decisions made
+4. List next steps
+5. Update critical context
+
+The handoff should track:
+- Completed tasks
+- Modified files
+- Important decisions
+- Next steps
+- Setup requirements
+- Special instructions
+
+## Session Management
+Our session is tracked automatically:
+- Started with: `.\ai-session.ps1 -action start`
+- Will end with: `.\ai-session.ps1 -action end`
+- All changes and work should be documented
+
+Can you please:
+1. Confirm you've reviewed our current state
+2. Note any active tasks or pending work
+3. Acknowledge protection rules
+4. Let me know you're ready to continue where we left off
+
+Please respond by summarizing our current state and next steps.
