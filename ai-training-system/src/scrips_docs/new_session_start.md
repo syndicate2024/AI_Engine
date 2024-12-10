@@ -1,23 +1,30 @@
-At the START of EVERY new AI session, run these commands first to get up to speed:
+Usage Instructions
 
-# 1. Check current project state
-Get-Content session-state.json
+Save this as ai-session.ps1 in your project root
+To start a new AI session:
 
-# 2. Read the latest handoff notes
-Get-Content "handoffs/latest.md"
-
-
-THEN create the new session before starting work:
-
-# 3. Generate new session ID and update state
-$sessionId = "$(Get-Date -Format 'yyyy-MM-dd')-$(Get-Random -Maximum 999)"
-.\scripts\update-session-state.ps1 -sessionId $sessionId
+.\ai-session.ps1 -action start
 
 
+To end an AI session:
 
-So in practice, you would:
+.\ai-session.ps1 -action end
 
-Start new chat with AI
-Run the first two commands to let AI read the current state
-Run the session creation commands
-Then start your work with AI
+That's it! This script will:
+
+Create necessary directories
+Initialize/maintain session state
+Show you previous session info
+Handle session tracking automatically
+
+The script shows you everything you need to know when starting a new session and handles all the organization automatically.
+
+
+# Start session
+.\ai-session.ps1 -action start
+
+# End session
+.\ai-session.ps1 -action end
+
+# Cleanup old sessions (keeps last 5 by default)
+.\ai-session.ps1 -action cleanup
