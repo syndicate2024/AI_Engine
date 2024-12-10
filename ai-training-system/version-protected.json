@@ -1,0 +1,49 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2024-12-09",
+    "protected": {
+      "files": {
+        "package.json": {
+          "version": "current",
+          "dependencies": "locked",
+          "scripts": "protected"
+        },
+        "tsconfig.json": {
+          "version": "locked",
+          "compilerOptions": "protected"
+        },
+        ".env.example": {
+          "version": "latest"
+        }
+      },
+      "versions": {
+        "node": ">=18.0.0",
+        "npm": ">=9.0.0",
+        "typescript": "^5.0.0"
+      },
+      "dependencies": {
+        "core": [
+          "react",
+          "next",
+          "typescript"
+        ],
+        "protected": [
+          "langchain",
+          "openai"
+        ]
+      }
+    },
+    "recovery": {
+      "backupLocations": [
+        ".backup/",
+        "version-backups/",
+        ".git/refs/"
+      ],
+      "criticalFiles": [
+        "package.json",
+        "tsconfig.json",
+        ".env.example",
+        "next.config.js"
+      ]
+    }
+  }
