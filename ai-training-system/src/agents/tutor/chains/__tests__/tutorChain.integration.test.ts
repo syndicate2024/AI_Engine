@@ -3,7 +3,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TutorChain } from '../tutorChain';
-import { ResponseType, TutorInteraction } from '../../../../types';
+import { TutorInteraction } from '../../../../types';
 
 describe('TutorChain Integration Tests', () => {
     let tutorChain: TutorChain;

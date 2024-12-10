@@ -42,7 +42,7 @@ export class TutorChain {
         const content = completion.choices[0].message.content;
 
         // Extract code snippets
-        const codeSnippets = this.extractCodeSnippets(content, input.skillLevel);
+        const codeSnippets = this.extractCodeSnippets(content, input.skillLevel || 'INTERMEDIATE');
 
         // Generate follow-up questions based on the content
         const followUpQuestions = this.generateFollowUpQuestions(content);

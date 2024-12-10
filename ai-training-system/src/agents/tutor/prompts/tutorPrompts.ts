@@ -1,7 +1,6 @@
 // @ai-protected
 // Tutor Prompts
 
-import { SkillLevel } from '../../../types';
 
 interface PromptTemplateArgs {
   [key: string]: string | number | boolean | undefined;

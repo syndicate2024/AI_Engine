@@ -1,10 +1,9 @@
 // @ai-protected
 
-import { useState } from 'react'
 
 
 function App() {
-  const [count, setCount] = useState(0)
+  // State management here
 
   return (
     <>
@@ -14,3 +13,4 @@ function App() {
 }
 
 export default App
+
