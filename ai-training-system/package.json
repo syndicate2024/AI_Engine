@@ -1,4 +1,3 @@
-
 {
   "name": "ai-training-system",
   "private": true,
@@ -19,12 +18,14 @@
     "@heroicons/react": "^2.2.0",
     "@langchain/community": "^0.3.17",
     "@langchain/openai": "^0.3.14",
+    "ai-training-system": "file:",
     "autoprefixer": "^10.4.20",
     "langchain": "^0.3.6",
     "postcss": "^8.4.49",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "tailwindcss": "^3.4.16"
+    "tailwindcss": "^3.4.16",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
