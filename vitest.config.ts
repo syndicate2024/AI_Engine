@@ -4,20 +4,20 @@ import path from 'path';
 
 export default defineConfig({
   test: {
+    globals: true,
     environment: 'node',
-    setupFiles: ['./src/__tests__/setup/test-setup.ts'],
-    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+    setupFiles: ['./tests/__setup__/test-env.ts'],
+    include: ['tests/**/*.test.ts'],
     coverage: {
-      provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/agents/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/__tests__/**']
+      include: ['src/**/*.ts'],
+      exclude: ['tests/**/*']
     }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@test': path.resolve(__dirname, 'src/__tests__')
+      '@': path.resolve(__dirname, './src'),
+      '@tests': path.resolve(__dirname, './tests')
     }
   }
 }); 

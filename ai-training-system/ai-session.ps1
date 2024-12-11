@@ -10,9 +10,16 @@ param(
 
 # Define paths relative to script location
 $scriptPath = $PSScriptRoot
+$parentPath = Split-Path $scriptPath -Parent  # Add parent directory path
 $sessionStatePath = Join-Path $scriptPath "session-state.json"
 $handoffsPath = Join-Path $scriptPath "handoffs"
 $latestHandoffPath = Join-Path $handoffsPath "latest.md"
+
+# Track modified files in both directories
+$trackingPaths = @{
+    child = $scriptPath
+    parent = $parentPath
+}
 
 # Create directories if they don't exist
 function EnsureDirectories {
@@ -148,9 +155,21 @@ function BackupSession {
     $sessionFolder = Join-Path $sessionBackupPath $sessionId
     New-Item -ItemType Directory -Force -Path $sessionFolder | Out-Null
     
-    # Backup entire workspace
-    $sourcePath = $PSScriptRoot
-    Copy-Item -Path "$sourcePath\*" -Destination $sessionFolder -Recurse -Force
+    # Backup both workspaces
+    $childBackupPath = Join-Path $sessionFolder "ai-training-system"
+    $parentBackupPath = Join-Path $sessionFolder "parent"
+    
+    # Create backup directories
+    New-Item -ItemType Directory -Force -Path $childBackupPath | Out-Null
+    New-Item -ItemType Directory -Force -Path $parentBackupPath | Out-Null
+    
+    # Backup child directory (current workspace)
+    Copy-Item -Path "$($trackingPaths.child)\*" -Destination $childBackupPath -Recurse -Force
+    
+    # Backup parent directory (test files)
+    New-Item -ItemType Directory -Force -Path (Join-Path $parentBackupPath "tests") | Out-Null
+    Copy-Item -Path "$($trackingPaths.parent)\tests" -Destination $parentBackupPath -Recurse -Force
+    Copy-Item -Path "$($trackingPaths.parent)\vitest.config.ts" -Destination $parentBackupPath -Force
     
     return $sessionFolder
 }
@@ -221,11 +240,48 @@ $(if ($tracking.tasks) {
     "No tasks completed in this session."
 })
 
-### Modified Files
-$(if ($tracking.modified_files) {
-    $tracking.modified_files | ForEach-Object { "- $_" } | Out-String
+### Changes in Parent Directory
+#### Added Files
+$(if ($tracking.parent_changes.added) {
+    $tracking.parent_changes.added | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
 } else {
-    "No files modified in this session."
+    "No files added in parent directory."
+})
+
+#### Modified Files
+$(if ($tracking.parent_changes.modified) {
+    $tracking.parent_changes.modified | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
+} else {
+    "No files modified in parent directory."
+})
+
+#### Deleted Files
+$(if ($tracking.parent_changes.deleted) {
+    $tracking.parent_changes.deleted | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
+} else {
+    "No files deleted from parent directory."
+})
+
+### Changes in Child Directory (ai-training-system)
+#### Added Files
+$(if ($tracking.child_changes.added) {
+    $tracking.child_changes.added | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
+} else {
+    "No files added in child directory."
+})
+
+#### Modified Files
+$(if ($tracking.child_changes.modified) {
+    $tracking.child_changes.modified | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
+} else {
+    "No files modified in child directory."
+})
+
+#### Deleted Files
+$(if ($tracking.child_changes.deleted) {
+    $tracking.child_changes.deleted | ForEach-Object { "- $($_.path) ($(([datetime]$_.timestamp).ToString('HH:mm:ss')))" } | Out-String
+} else {
+    "No files deleted from child directory."
 })
 
 ### Important Decisions
