@@ -1,3 +1,4 @@
+// @ai-protected
 export interface LearningContext {
     recentConcepts?: string[];
     skillLevel?: SkillLevel;

@@ -1,3 +1,4 @@
+# @ai-protected
 # Complete Test Implementation
 
 ## 1. Unit Tests

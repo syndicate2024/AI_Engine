@@ -1,3 +1,4 @@
+# @ai-protected
 # Backend Integration Architecture
 
 ## Core Engine Integration

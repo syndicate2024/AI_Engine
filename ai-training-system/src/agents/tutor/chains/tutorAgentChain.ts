@@ -1,3 +1,4 @@
+// @ai-protected
 import { LearningContext, TutorInteraction, TutorResponse } from '../../../types';
 import { TutorChain } from './tutorChain';
 
