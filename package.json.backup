@@ -12,7 +12,8 @@
     "test:integration": "npm run test:integration -w ai-training-system",
     "build": "npm run build -w ai-training-system",
     "setup:tests": "ts-node scripts/setup-test-structure.ts",
-    "clean:tests": "powershell -Command \"Remove-Item -Path 'src/__tests__','src/agents/*/tests','src/agents/*/__tests__','test' -Recurse -Force -ErrorAction SilentlyContinue\""
+    "clean:tests": "powershell -Command \"Remove-Item -Path 'src/__tests__','src/agents/*/tests','src/agents/*/__tests__','test' -Recurse -Force -ErrorAction SilentlyContinue\"
+
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
@@ -24,7 +25,6 @@
     "dotenv": "^16.4.7",
     "fs-extra": "^11.2.0",
     "path": "^0.12.7",
-    "ts-node": "^10.9.2",
     "typescript": "~5.6.2",
     "vitest": "^1.6.0",
     "zod": "^3.23.8"

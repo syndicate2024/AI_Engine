@@ -9,7 +9,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TutorChain } from '../tutorChain';
 import { ResponseType, TutorInteraction } from '../../../../types';
-import { mockOpenAI } from '../../../../../test/setup';
+import { mockOpenAI } from '../../../../../test/helpers/mockSetup';
 
 describe('TutorChain Unit Tests', () => {
     let tutorChain: TutorChain;

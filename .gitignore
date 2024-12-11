@@ -1,3 +1,6 @@
+# @ai-protected
+# Git Ignore
+
 # Dependencies
 node_modules/
 .pnp/

@@ -5,7 +5,7 @@
       "version-control",
       "session-handoff"
     ],
-    "lastUpdate": "2024-12-11T10:23:18.0474879-08:00",
+    "lastUpdate": "2024-12-11T13:29:08.8141912-08:00",
     "currentPhase": "setup",
     "name": "AI Training System"
   },
@@ -94,6 +94,24 @@
       "startTime": "2024-12-11T10:23:18.0465291-08:00",
       "status": "completed",
       "sessionId": "2024-12-11-298"
+    },
+    {
+      "endTime": "2024-12-11T11:19:06.2506112-08:00",
+      "startTime": "2024-12-11T10:34:36.7288848-08:00",
+      "status": "completed",
+      "sessionId": "2024-12-11-534"
+    },
+    {
+      "status": "completed",
+      "startTime": "2024-12-11T11:53:58.7954639-08:00",
+      "sessionId": "2024-12-11-346",
+      "endTime": "2024-12-11T13:28:06.8740831-08:00"
+    },
+    {
+      "status": "active",
+      "startTime": "2024-12-11T13:29:08.8141217-08:00",
+      "sessionId": "2024-12-11-343",
+      "endTime": null
     }
   ],
   "systemState": {
@@ -111,5 +129,5 @@
       "scripts"
     ]
   },
-  "activeSession": null
+  "activeSession": "2024-12-11-343"
 }
