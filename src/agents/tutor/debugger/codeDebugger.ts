@@ -1,323 +1,360 @@
 // @ai-protected
 import * as esprima from 'esprima';
-import * as estraverse from 'estraverse';
 import * as escodegen from 'escodegen';
+import * as estraverse from 'estraverse';
+import { Node } from 'estree';
 
-interface DebugAnalysis {
+interface AnalysisResult {
     hasErrors: boolean;
     syntaxErrors: string[];
     commonMistakes: string[];
     undefinedVariables: string[];
-    suggestions: string[];
+    scopeErrors: string[];
+    typeErrors: string[];
 }
 
-interface ExecutionStep {
-    lineNumber: number;
-    code: string;
-    variables: Record<string, any>;
-    output?: string;
-    explanation: string;
+interface Visualization {
+    steps: {
+        variables: Record<string, any>;
+        line: number;
+        description: string;
+    }[];
+    loops: {
+        iterations: number;
+        line: number;
+    }[];
+    branches: {
+        condition: string;
+        taken: boolean;
+        line: number;
+    }[];
+    callStack: string[];
 }
 
-interface LoopInfo {
-    lineNumber: number;
-    iterations: number;
-    variables: Record<string, any>[];
-}
-
-interface ExecutionVisualization {
-    steps: ExecutionStep[];
-    loops: LoopInfo[];
-    timeline: string[];
-}
-
-interface FixSuggestion {
-    error: string;
+interface Fix {
     suggestion: string;
     example?: string;
-    explanation: string;
+    severity: 'critical' | 'warning' | 'info';
+    priority: number;
+    alternativeApproach?: string;
 }
 
 interface GuidedExercise {
     code: string;
     tasks: string[];
-    hints: Array<{
+    hints: {
         level: 'subtle' | 'moderate' | 'explicit';
         content: string;
-    }>;
-    solution: string;
+    }[];
+    difficulty: number;
+    learningObjectives: string[];
 }
 
 export class CodeDebugger {
-    private variableScope: Map<string, any>;
-    private executionSteps: ExecutionStep[];
-    private loopInfo: LoopInfo[];
+    private scopeChain: Set<string>[] = [];
+    private currentScope: Set<string> = new Set();
 
-    constructor() {
-        this.variableScope = new Map();
-        this.executionSteps = [];
-        this.loopInfo = [];
-    }
-
-    public analyzeCode(code: string): DebugAnalysis {
-        const analysis: DebugAnalysis = {
+    analyzeCode(code: string): AnalysisResult {
+        const result: AnalysisResult = {
             hasErrors: false,
             syntaxErrors: [],
             commonMistakes: [],
             undefinedVariables: [],
-            suggestions: []
+            scopeErrors: [],
+            typeErrors: []
         };
 
         try {
-            // Parse code to check syntax
-            const ast = esprima.parseScript(code, { tolerant: true, loc: true });
-            
+            const ast = esprima.parseModule(code, { 
+                loc: true, 
+                range: true,
+                tokens: true,
+                comment: true,
+                jsx: true,
+                tolerant: true
+            });
+
             // Check for syntax errors
             if (ast.errors && ast.errors.length > 0) {
-                analysis.hasErrors = true;
-                analysis.syntaxErrors = ast.errors.map(error => error.message);
+                result.hasErrors = true;
+                result.syntaxErrors = ast.errors.map(error => error.message);
             }
 
-            // Analyze AST for common mistakes and undefined variables
-            this.analyzeAST(ast, analysis);
+            // Analyze scope and variables
+            this.scopeChain = [new Set()];
+            this.currentScope = this.scopeChain[0];
+
+            estraverse.traverse(ast, {
+                enter: (node: Node) => {
+                    switch (node.type) {
+                        case 'VariableDeclaration':
+                            this.checkVariableDeclaration(node, result);
+                            break;
+                        case 'Identifier':
+                            this.checkIdentifierUsage(node, result);
+                            break;
+                        case 'WhileStatement':
+                            this.checkInfiniteLoop(node, result);
+                            break;
+                        case 'TypeAnnotation':
+                            this.checkTypeAnnotation(node, result);
+                            break;
+                    }
+                }
+            });
 
         } catch (error) {
-            analysis.hasErrors = true;
-            analysis.syntaxErrors.push(error.message);
+            result.hasErrors = true;
+            result.syntaxErrors.push(error.message);
         }
 
-        // Generate suggestions based on findings
-        this.generateSuggestions(analysis);
-
-        return analysis;
+        return result;
     }
 
-    private analyzeAST(ast: any, analysis: DebugAnalysis): void {
-        const declaredVariables = new Set<string>();
-        
-        estraverse.traverse(ast, {
-            enter: (node: any) => {
-                switch (node.type) {
-                    case 'VariableDeclarator':
-                        declaredVariables.add(node.id.name);
-                        break;
-                    case 'Identifier':
-                        if (!declaredVariables.has(node.name) && 
-                            node.parent?.type !== 'VariableDeclarator') {
-                            analysis.undefinedVariables.push(node.name);
-                        }
-                        break;
-                    case 'WhileStatement':
-                        if (node.test.type === 'Literal' && node.test.value === true) {
-                            analysis.commonMistakes.push('Infinite loop detected');
-                        }
-                        break;
-                    case 'ForStatement':
-                        if (!node.init || node.init.type === 'AssignmentExpression') {
-                            analysis.commonMistakes.push('Missing variable declaration');
-                        }
-                        break;
-                }
-            }
-        });
-    }
-
-    private generateSuggestions(analysis: DebugAnalysis): void {
-        if (analysis.undefinedVariables.length > 0) {
-            analysis.suggestions.push(
-                `Declare variables before using them: ${analysis.undefinedVariables.join(', ')}`
-            );
-        }
-
-        if (analysis.commonMistakes.includes('Infinite loop detected')) {
-            analysis.suggestions.push(
-                'Add a condition that will eventually become false to prevent infinite loops'
-            );
-        }
-
-        if (analysis.commonMistakes.includes('Missing variable declaration')) {
-            analysis.suggestions.push(
-                'Use let or const to declare loop variables'
-            );
-        }
-    }
-
-    public generateDebugSteps(code: string): string[] {
+    generateDebugSteps(code: string): string[] {
         const steps: string[] = [];
-        const analysis = this.analyzeCode(code);
+        try {
+            const ast = esprima.parseModule(code);
+            let stepNumber = 1;
 
-        // Add initial analysis step
-        steps.push("First, let's check the variable declarations");
-        
-        if (analysis.undefinedVariables.length > 0) {
-            steps.push(`Found undefined variables: ${analysis.undefinedVariables.join(', ')}`);
-            steps.push('Hint: Declare these variables using let or const');
+            estraverse.traverse(ast, {
+                enter: (node: Node) => {
+                    switch (node.type) {
+                        case 'FunctionDeclaration':
+                            steps.push(`${stepNumber++}. Analyzing function declaration: ${(node as any).id.name}`);
+                            if ((node as any).async) {
+                                steps.push(`   Hint: This is an async function, remember to handle Promises correctly`);
+                            }
+                            break;
+                        case 'VariableDeclaration':
+                            steps.push(`${stepNumber++}. Checking variable declarations`);
+                            break;
+                        case 'WhileStatement':
+                        case 'ForStatement':
+                            steps.push(`${stepNumber++}. Examining loop structure for potential issues`);
+                            break;
+                    }
+                }
+            });
+        } catch (error) {
+            steps.push(`Error: ${error.message}`);
         }
-
-        // Add loop analysis
-        if (analysis.commonMistakes.includes('Infinite loop detected')) {
-            steps.push('Check your loop conditions');
-            steps.push('Hint: Make sure your loop has a termination condition');
-        }
-
-        // Add general code structure analysis
-        steps.push('Review the overall code structure');
-        analysis.suggestions.forEach(suggestion => {
-            steps.push(`Suggestion: ${suggestion}`);
-        });
-
         return steps;
     }
 
-    public visualizeExecution(code: string): ExecutionVisualization {
-        this.executionSteps = [];
-        this.loopInfo = [];
-        this.variableScope.clear();
+    visualizeExecution(code: string): Visualization {
+        const visualization: Visualization = {
+            steps: [],
+            loops: [],
+            branches: [],
+            callStack: []
+        };
 
         try {
-            const ast = esprima.parseScript(code, { loc: true });
-            this.executeASTNode(ast);
+            const ast = esprima.parseModule(code);
+            const scope: Record<string, any> = {};
+            let currentLine = 1;
 
-            return {
-                steps: this.executionSteps,
-                loops: this.loopInfo,
-                timeline: this.executionSteps.map(step => step.explanation)
-            };
+            estraverse.traverse(ast, {
+                enter: (node: Node) => {
+                    switch (node.type) {
+                        case 'VariableDeclaration':
+                            this.visualizeVariableDeclaration(node, scope, visualization, currentLine);
+                            break;
+                        case 'IfStatement':
+                            this.visualizeConditionalBranch(node, visualization, currentLine);
+                            break;
+                        case 'FunctionDeclaration':
+                            this.visualizeFunctionCall(node, visualization);
+                            break;
+                        case 'ForStatement':
+                        case 'WhileStatement':
+                            this.visualizeLoop(node, visualization, currentLine);
+                            break;
+                    }
+                    if ((node as any).loc) {
+                        currentLine = (node as any).loc.start.line;
+                    }
+                }
+            });
         } catch (error) {
-            return {
-                steps: [{
-                    lineNumber: 1,
-                    code: code,
-                    variables: {},
-                    explanation: `Error: ${error.message}`
-                }],
-                loops: [],
-                timeline: [`Error: ${error.message}`]
-            };
-        }
-    }
-
-    private executeASTNode(node: any, depth: number = 0): any {
-        switch (node.type) {
-            case 'Program':
-                return node.body.map(stmt => this.executeASTNode(stmt, depth));
-            case 'VariableDeclaration':
-                return node.declarations.map(decl => {
-                    const value = this.executeASTNode(decl.init, depth);
-                    this.variableScope.set(decl.id.name, value);
-                    this.addExecutionStep(node.loc.start.line, escodegen.generate(node), 
-                        `Declared ${decl.id.name} = ${value}`);
-                    return value;
-                });
-            case 'Literal':
-                return node.value;
-            case 'Identifier':
-                return this.variableScope.get(node.name);
-            case 'BinaryExpression':
-                const left = this.executeASTNode(node.left, depth);
-                const right = this.executeASTNode(node.right, depth);
-                return this.evaluateBinaryExpression(left, node.operator, right);
-        }
-    }
-
-    private evaluateBinaryExpression(left: any, operator: string, right: any): any {
-        switch (operator) {
-            case '+': return left + right;
-            case '-': return left - right;
-            case '*': return left * right;
-            case '/': return left / right;
-            default: return null;
-        }
-    }
-
-    private addExecutionStep(lineNumber: number, code: string, explanation: string): void {
-        this.executionSteps.push({
-            lineNumber,
-            code,
-            variables: Object.fromEntries(this.variableScope),
-            explanation
-        });
-    }
-
-    public suggestFixes(code: string): FixSuggestion[] {
-        const analysis = this.analyzeCode(code);
-        const fixes: FixSuggestion[] = [];
-
-        // Handle undefined variables
-        analysis.undefinedVariables.forEach(variable => {
-            fixes.push({
-                error: `Undefined variable: ${variable}`,
-                suggestion: `Declare the variable using let or const`,
-                example: `let ${variable} = /* initial value */;`,
-                explanation: 'Variables must be declared before they can be used'
-            });
-        });
-
-        // Handle infinite loops
-        if (analysis.commonMistakes.includes('Infinite loop detected')) {
-            fixes.push({
-                error: 'Infinite loop detected',
-                suggestion: 'Add a condition that will eventually become false',
-                example: 'while (count < maxIterations) { count++; }',
-                explanation: 'Loops need a condition that will eventually become false to prevent infinite execution'
+            visualization.steps.push({
+                variables: {},
+                line: 0,
+                description: `Error: ${error.message}`
             });
         }
 
+        return visualization;
+    }
+
+    suggestFixes(code: string): Fix[] {
+        const fixes: Fix[] = [];
+        try {
+            const ast = esprima.parseModule(code);
+            
+            estraverse.traverse(ast, {
+                enter: (node: Node) => {
+                    switch (node.type) {
+                        case 'ForStatement':
+                            if (!(node as any).init || (node as any).init.type === 'Identifier') {
+                                fixes.push({
+                                    suggestion: 'Initialize loop variable with let/const',
+                                    example: 'for(let i = 0; i < 10; i++)',
+                                    severity: 'critical',
+                                    priority: 1
+                                });
+                            }
+                            break;
+                        case 'WhileStatement':
+                            if ((node as any).test.type === 'Literal' && (node as any).test.value === true) {
+                                fixes.push({
+                                    suggestion: 'Avoid infinite loops',
+                                    example: 'while(condition) { ... }',
+                                    severity: 'critical',
+                                    priority: 1,
+                                    alternativeApproach: 'Consider using a for loop with a specific condition'
+                                });
+                            }
+                            break;
+                    }
+                }
+            });
+        } catch (error) {
+            fixes.push({
+                suggestion: `Fix syntax error: ${error.message}`,
+                severity: 'critical',
+                priority: 0
+            });
+        }
         return fixes;
     }
 
-    public generateGuidedExercise(topic: string): GuidedExercise {
-        // Generate an exercise based on common debugging scenarios
+    generateGuidedExercise(topic: string): GuidedExercise {
         const exercises: Record<string, GuidedExercise> = {
-            'loops': {
-                code: `
-                    for(i=0; i<5; i++) {
-                        console.log(x);
-                    }
-                `,
-                tasks: [
-                    'Find and fix the variable declaration error',
-                    'Identify the undefined variable',
-                    'Add proper initialization'
-                ],
+            'variables': {
+                code: 'let x; console.log(x);',
+                tasks: ['Initialize the variable', 'Add type annotation'],
                 hints: [
-                    { level: 'subtle', content: 'Check how variables are declared' },
-                    { level: 'moderate', content: 'Look for missing let/const keywords' },
-                    { level: 'explicit', content: 'Add let before i=0 and declare x' }
+                    { level: 'subtle', content: 'Think about variable scope' },
+                    { level: 'moderate', content: 'Variables should be initialized' }
                 ],
-                solution: `
-                    let x = 0;
-                    for(let i=0; i<5; i++) {
-                        console.log(x);
-                    }
-                `
+                difficulty: 1,
+                learningObjectives: ['Understanding variable declaration', 'Variable initialization']
             },
-            'functions': {
-                code: `
-                    function calculate(a, b) {
-                        return a + b
-                    }
-                    console.log(calculate(1, "2"));
-                `,
-                tasks: [
-                    'Identify the type coercion issue',
-                    'Add type checking',
-                    'Fix the function to handle numbers only'
-                ],
+            'async': {
+                code: 'async function getData() { }',
+                tasks: ['Implement error handling', 'Add proper await usage'],
                 hints: [
-                    { level: 'subtle', content: 'What happens when you add different types?' },
-                    { level: 'moderate', content: 'Check the parameter types' },
-                    { level: 'explicit', content: 'Convert strings to numbers or add type annotations' }
+                    { level: 'subtle', content: 'Consider what might fail' },
+                    { level: 'moderate', content: 'Use try/catch blocks' }
                 ],
-                solution: `
-                    function calculate(a: number, b: number): number {
-                        return a + b;
-                    }
-                    console.log(calculate(1, 2));
-                `
+                difficulty: 4,
+                learningObjectives: ['Async/await usage', 'Error handling in async code']
+            },
+            'loops': {
+                code: 'for(let i = 0; i < 5; i++) { }',
+                tasks: ['Add loop body', 'Implement break condition'],
+                hints: [
+                    { level: 'subtle', content: 'Think about loop termination' },
+                    { level: 'moderate', content: 'Consider edge cases' }
+                ],
+                difficulty: 2,
+                learningObjectives: ['Loop construction', 'Loop control flow']
             }
         };
 
-        return exercises[topic] || exercises['loops'];
+        return exercises[topic] || exercises['variables'];
+    }
+
+    private checkVariableDeclaration(node: Node, result: AnalysisResult): void {
+        const declarations = (node as any).declarations;
+        declarations.forEach((decl: any) => {
+            if (!decl.init) {
+                result.commonMistakes.push('Variable declared but not initialized');
+            }
+            this.currentScope.add(decl.id.name);
+        });
+    }
+
+    private checkIdentifierUsage(node: Node, result: AnalysisResult): void {
+        const name = (node as any).name;
+        if (!this.isVariableDefined(name)) {
+            result.undefinedVariables.push(name);
+        }
+    }
+
+    private checkInfiniteLoop(node: Node, result: AnalysisResult): void {
+        if ((node as any).test.type === 'Literal' && (node as any).test.value === true) {
+            result.commonMistakes.push('Infinite loop detected');
+        }
+    }
+
+    private checkTypeAnnotation(node: Node, result: AnalysisResult): void {
+        // Basic type checking logic
+        const typeAnnotation = (node as any).typeAnnotation;
+        if (typeAnnotation) {
+            // Add type checking logic here
+        }
+    }
+
+    private isVariableDefined(name: string): boolean {
+        for (const scope of this.scopeChain) {
+            if (scope.has(name)) return true;
+        }
+        return false;
+    }
+
+    private visualizeVariableDeclaration(node: Node, scope: Record<string, any>, visualization: Visualization, line: number): void {
+        (node as any).declarations.forEach((decl: any) => {
+            const varName = decl.id.name;
+            const value = decl.init ? this.evaluateNode(decl.init) : undefined;
+            scope[varName] = value;
+            visualization.steps.push({
+                variables: { ...scope },
+                line,
+                description: `Declared ${varName} = ${value}`
+            });
+        });
+    }
+
+    private visualizeConditionalBranch(node: Node, visualization: Visualization, line: number): void {
+        const condition = escodegen.generate((node as any).test);
+        const value = this.evaluateNode((node as any).test);
+        visualization.branches.push({
+            condition,
+            taken: value,
+            line
+        });
+    }
+
+    private visualizeFunctionCall(node: Node, visualization: Visualization): void {
+        const functionName = (node as any).id.name;
+        visualization.callStack.push(functionName);
+    }
+
+    private visualizeLoop(node: Node, visualization: Visualization, line: number): void {
+        visualization.loops.push({
+            iterations: this.estimateLoopIterations(node),
+            line
+        });
+    }
+
+    private evaluateNode(node: Node): any {
+        try {
+            return eval(escodegen.generate(node));
+        } catch {
+            return undefined;
+        }
+    }
+
+    private estimateLoopIterations(node: Node): number {
+        if (node.type === 'ForStatement') {
+            const test = (node as any).test;
+            if (test && test.operator === '<' && test.right.type === 'Literal') {
+                return test.right.value;
+            }
+        }
+        return 0;
     }
 } 

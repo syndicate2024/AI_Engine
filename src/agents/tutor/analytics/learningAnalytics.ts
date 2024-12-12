@@ -72,9 +72,10 @@ export class AnalyticsDashboard {
         const struggleAreas: string[] = [];
 
         topicMastery.forEach((score, topic) => {
-            if (score >= this.MASTERY_THRESHOLD) {
+            if (score >= this.MASTERY_THRESHOLD || progress.completedTopics.includes(topic)) {
                 strengths.push(topic);
-            } else if (score <= this.STRUGGLE_THRESHOLD) {
+            }
+            if (score <= this.STRUGGLE_THRESHOLD || progress.struggledTopics.includes(topic)) {
                 struggleAreas.push(topic);
             }
         });
@@ -198,14 +199,28 @@ export class AnalyticsDashboard {
     ): string[] {
         const recommendations: string[] = [];
 
-        // Check for low mastery topics
-        progress.topicScores.forEach((score, topic) => {
-            if (score < this.MASTERY_THRESHOLD) {
-                const metadata = topicMetadata.get(topic);
-                if (metadata) {
+        // Add recommendations for struggled topics first
+        progress.struggledTopics.forEach(topic => {
+            const metadata = topicMetadata.get(topic);
+            if (metadata && metadata.remedialContent) {
+                metadata.remedialContent.forEach(content => {
                     recommendations.push(
-                        `Review ${topic} using: ${metadata.remedialContent.join(', ')}`
+                        `Review ${topic} starting with ${content}`
                     );
+                });
+            }
+        });
+
+        // Then check for low mastery topics
+        progress.topicScores.forEach((score, topic) => {
+            if (score < this.MASTERY_THRESHOLD && !progress.struggledTopics.includes(topic)) {
+                const metadata = topicMetadata.get(topic);
+                if (metadata && metadata.remedialContent) {
+                    metadata.remedialContent.forEach(content => {
+                        recommendations.push(
+                            `Practice ${topic} with ${content}`
+                        );
+                    });
                 }
             }
         });

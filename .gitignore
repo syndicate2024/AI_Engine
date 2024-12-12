@@ -19,6 +19,10 @@ out/
 .env
 .env.local
 .env.*.local
+.env.development
+.env.test
+.env.example
+.env.production
 
 # IDE
 .idea/
@@ -46,5 +50,3 @@ Thumbs.db
 
 # Git
 .git/
-.env.development
-.env.development

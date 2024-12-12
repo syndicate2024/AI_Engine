@@ -1,8 +1,14 @@
 // @ai-protected
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      '@tests': path.resolve(__dirname, './tests')
+    }
+  },
   test: {
     globals: true,
     environment: 'node',
@@ -11,11 +17,5 @@ export default defineConfig({
     coverage: {
       reporter: ['text', 'json', 'html'],
     },
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-      '@tests': path.resolve(__dirname, './tests')
-    }
   }
 }); 
